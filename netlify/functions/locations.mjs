@@ -1,23 +1,23 @@
 // GET  /api/locations?jobId=xxx          -> list locations for a job
 // POST /api/locations {jobId, name}      -> add a location to a job
-const { connectLambda, json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } = require('./lib/_lib');
+import { json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } from './lib/_lib.mjs';
 
-exports.handler = async (event) => {
-  connectLambda(event);
+export default async (req) => {
   try {
-    const jobId = event.queryStringParameters && event.queryStringParameters.jobId;
+    const url = new URL(req.url);
+    const jobIdQ = url.searchParams.get('jobId');
 
-    if (event.httpMethod === 'GET') {
-      if (!jobId) return badRequest('jobId is required.');
+    if (req.method === 'GET') {
+      if (!jobIdQ) return badRequest('jobId is required.');
       const jobs = await readJSON('jobs/index.json', []);
-      if (!jobs.some((j) => j.id === jobId)) return notFound('Job not found.');
-      const locations = await readJSON(`jobs/${jobId}/locations.json`, []);
+      if (!jobs.some((j) => j.id === jobIdQ)) return notFound('Job not found.');
+      const locations = await readJSON(`jobs/${jobIdQ}/locations.json`, []);
       return json(200, { locations });
     }
 
-    if (event.httpMethod === 'POST') {
-      const body = parseBody(event);
-      const id = body.jobId || jobId;
+    if (req.method === 'POST') {
+      const body = await parseBody(req);
+      const id = body.jobId || jobIdQ;
       const name = (body.name || '').trim();
       if (!id) return badRequest('jobId is required.');
       if (!name) return badRequest('A location name is required.');

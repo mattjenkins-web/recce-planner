@@ -11,8 +11,8 @@
 // The upload UI also reads EXIF client-side (before it may downscale a large
 // photo for upload, which strips EXIF) and sends lat/lon/capturedAt/camera
 // fields explicitly for exactly that reason — those take priority too.
-const exifr = require('exifr');
-const { store, connectLambda, json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } = require('./lib/_lib');
+import exifr from 'exifr';
+import { store, json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } from './lib/_lib.mjs';
 
 // Netlify's classic functions cap the request body around 6MB; base64
 // inflates raw bytes by ~37%, so this stays safely under that regardless of
@@ -47,20 +47,20 @@ async function extractExif(buffer) {
   return out;
 }
 
-exports.handler = async (event) => {
-  connectLambda(event);
+export default async (req) => {
   try {
-    const q = event.queryStringParameters || {};
+    const url = new URL(req.url);
 
-    if (event.httpMethod === 'GET') {
-      const { jobId, locationId } = q;
+    if (req.method === 'GET') {
+      const jobId = url.searchParams.get('jobId');
+      const locationId = url.searchParams.get('locationId');
       if (!jobId || !locationId) return badRequest('jobId and locationId are required.');
       const photos = await readJSON(`jobs/${jobId}/locations/${locationId}/photos.json`, []);
       return json(200, { photos: photos.map((p) => ({ ...p, url: `/api/photo?id=${p.id}` })) });
     }
 
-    if (event.httpMethod === 'POST') {
-      const body = parseBody(event);
+    if (req.method === 'POST') {
+      const body = await parseBody(req);
       const { jobId, locationId, filename, contentType, dataBase64 } = body;
       if (!jobId || !locationId) return badRequest('jobId and locationId are required.');
       if (!dataBase64) return badRequest('dataBase64 (the photo, base64-encoded) is required.');

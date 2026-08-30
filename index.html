@@ -109,7 +109,7 @@
             <svg viewBox="0 0 24 24" width="12" height="12" fill="var(--ui-fav)" stroke="var(--ui-fav)" stroke-width="2" stroke-linejoin="round"><path d="M12 3.5l2.7 5.6 6.1.8-4.4 4.3 1.1 6.1L12 17.4l-5.5 2.9 1.1-6.1L3.2 9.9l6.1-.8z"></path></svg>
           </div>
         </sc-if>
-        <button class="chip" onClick="{{ showAll }}" style="{{ allStyle }} padding: 5px 11px; font-size: 12px;">All 20</button>
+        <button class="chip" onClick="{{ showAll }}" style="{{ allStyle }} padding: 5px 11px; font-size: 12px;">{{ allLabel }}</button>
         <sc-if value="{{ hasHidden }}" hint-placeholder-val="{{ false }}">
           <button class="chip" onClick="{{ toggleShowHidden }}" style="{{ hiddenStyle }} padding: 5px 11px; font-size: 12px;">Hidden {{ hiddenCount }}</button>
         </sc-if>
@@ -173,7 +173,7 @@
           <div style="font-size: 10px; color: var(--ui-soft); margin-top: 3px">Frame {{ t.id }}</div>
         </div>
       </sc-for>
-      <div style="flex: none; display: flex; align-items: center">
+      <div style="flex: none; align-self: flex-start">
         <input ref="{{ uploadInputRef }}" type="file" accept="image/*" multiple="{{ true }}" onChange="{{ onUploadFiles }}" style="display: none">
         <button onClick="{{ openUploader }}" title="Add more photos to this location" aria-label="Add more photos to this location" style="box-sizing: border-box; width: {{ tw }}px; height: {{ th }}px; margin: 0; padding: 0; border-radius: 8px; border: 2px dashed var(--ui-line); background: var(--ui-hover); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--ui-soft); font-family: var(--font-body); line-height: 1; overflow: hidden">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--ui-deep)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -190,9 +190,24 @@
         <sc-for list="{{ shotComments }}" as="c" hint-placeholder-count="2">
           <div style="display: flex; gap: 8px; align-items: flex-start">
             <div style="width: 26px; height: 26px; border-radius: 999px; background: var(--ui-accent); color: var(--ui-panel); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none">{{ c.initials }}</div>
-            <div style="min-width: 0">
-              <div style="font-size: 12px; font-weight: 700; color: var(--ui-ink)">{{ c.name }}<span style="font-weight: 500; color: var(--ui-soft); margin-left: 6px">{{ c.timeLabel }}</span></div>
-              <div style="font-size: 13px; color: var(--ui-ink); line-height: 1.4">{{ c.text }}</div>
+            <div style="min-width: 0; flex: 1">
+              <div style="display: flex; align-items: baseline; gap: 6px">
+                <div style="font-size: 12px; font-weight: 700; color: var(--ui-ink)">{{ c.name }}<span style="font-weight: 500; color: var(--ui-soft); margin-left: 6px">{{ c.timeLabel }}</span></div>
+                <sc-if value="{{ c.mine }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ c.onStartEdit }}" style="border: none; background: none; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--ui-soft); padding: 0">Edit</button>
+                  <button onClick="{{ c.onDelete }}" style="border: none; background: none; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--ui-soft); padding: 0">Delete</button>
+                </sc-if>
+              </div>
+              <sc-if value="{{ c.isEditing }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 6px; align-items: flex-end; margin-top: 4px">
+                  <textarea value="{{ c.editDraft }}" onChange="{{ c.onEditDraftChange }}" onKeyDown="{{ c.onEditKeyDown }}" rows="2" style="flex: 1; resize: none; box-sizing: border-box; border: 1px solid var(--ui-line); border-radius: 10px; padding: 6px 8px; font-family: var(--font-body); font-size: 13px; background: var(--ui-hover); color: var(--ui-ink)"></textarea>
+                  <button class="chip" onClick="{{ c.onSaveEdit }}" style="background: var(--ui-accent); color: var(--ui-panel); padding: 5px 12px; font-size: 11px">Save</button>
+                  <button class="chip" onClick="{{ c.onCancelEdit }}" style="background: var(--ui-hover); color: var(--ui-ink); padding: 5px 12px; font-size: 11px">Cancel</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ !c.isEditing }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size: 13px; color: var(--ui-ink); line-height: 1.4">{{ c.text }}</div>
+              </sc-if>
             </div>
           </div>
         </sc-for>
@@ -320,6 +335,18 @@ const SHOTS = [
   { id: '18', f: 'shot-18', lat: -37.8199083, lon: 144.9816583, bearing: 32, tilt: 5, mm: 24, t: '12:41:11' },
   { id: '19', f: 'shot-19', lat: -37.8189944, lon: 144.9819889, bearing: 81, tilt: 12, mm: 24, t: '12:44:17' },
   { id: '20', f: 'shot-20', lat: -37.8190556, lon: 144.9820750, bearing: 72, tilt: 9, mm: 24, t: '12:44:34' },
+  { id: '21', f: 'shot-21', lat: -37.817508, lon: 144.982228, bearing: 161, tilt: 6, mm: 24, t: '14:05:29' },
+  { id: '22', f: 'shot-22', lat: -37.817706, lon: 144.983428, bearing: 142, tilt: 2, mm: 24, t: '14:08:48' },
+  { id: '23', f: 'shot-23', lat: -37.817706, lon: 144.983428, bearing: 144, tilt: 2, mm: 24, t: '14:08:53' },
+  { id: '24', f: 'shot-24', lat: -37.817633, lon: 144.983194, bearing: 160, tilt: 3, mm: 24, t: '14:09:52' },
+  { id: '25', f: 'shot-25', lat: -37.817697, lon: 144.983642, bearing: 225, tilt: 5, mm: 24, t: '14:12:22' },
+  { id: '26', f: 'shot-26', lat: -37.817694, lon: 144.983694, bearing: 222, tilt: 5, mm: 24, t: '14:14:31' },
+  { id: '27', f: 'shot-27', lat: -37.817706, lon: 144.983717, bearing: 224, tilt: 6, mm: 24, t: '14:22:30' },
+  { id: '28', f: 'shot-28', lat: -37.817711, lon: 144.983694, bearing: 222, tilt: 7, mm: 24, t: '14:22:46' },
+  { id: '29', f: 'shot-29', lat: -37.817792, lon: 144.983603, bearing: 231, tilt: 9, mm: 24, t: '14:25:51' },
+  { id: '30', f: 'shot-30', lat: -37.817769, lon: 144.983603, bearing: 221, tilt: 9, mm: 24, t: '14:26:11' },
+  { id: '31', f: 'shot-31', lat: -37.817592, lon: 144.982392, bearing: 201, tilt: 6, mm: 24, t: '14:31:13' },
+  { id: '32', f: 'shot-32', lat: -37.817528, lon: 144.982381, bearing: 204, tilt: 6, mm: 24, t: '14:31:40' },
 ];
 const FOV = { 24: { h: 57.6, v: 34.4 }, 20: { h: 67.0, v: 40.7 } }; // Cadrage burn-in, Alexa Mini 3.2K 1.78:1
 const SITE = { lat: -37.81998, lon: 144.98342 };
@@ -372,7 +399,7 @@ const loadComments = () => { try { return JSON.parse(localStorage.getItem(STORE_
 const loadHidden = () => { try { return JSON.parse(localStorage.getItem(STORE_HIDDEN)) || {}; } catch (e) { return {}; } };
 
 class Component extends DCLogic {
-  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false };
+  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false, editingComment: null, editCommentDraft: '' };
 
   startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
   onTitleInput = e => this.setState({ titleDraft: e.target.value });
@@ -419,6 +446,26 @@ class Component extends DCLogic {
     comments[id] = list;
     try { localStorage.setItem(STORE_COMMENTS, JSON.stringify(comments)); } catch (e) {}
     this.setState({ comments, commentDraft: '' });
+  }
+  startEditComment(shotId, idx, text) { this.setState({ editingComment: shotId + ':' + idx, editCommentDraft: text }); }
+  cancelEditComment() { this.setState({ editingComment: null, editCommentDraft: '' }); }
+  saveEditComment(shotId, idx) {
+    const text = this.state.editCommentDraft.trim();
+    if (!text) return;
+    const comments = { ...this.state.comments };
+    const list = [...(comments[shotId] || [])];
+    if (list[idx]) list[idx] = { ...list[idx], text, editedTs: Date.now() };
+    comments[shotId] = list;
+    try { localStorage.setItem(STORE_COMMENTS, JSON.stringify(comments)); } catch (e) {}
+    this.setState({ comments, editingComment: null, editCommentDraft: '' });
+  }
+  deleteComment(shotId, idx) {
+    const comments = { ...this.state.comments };
+    const list = [...(comments[shotId] || [])];
+    list.splice(idx, 1);
+    comments[shotId] = list;
+    try { localStorage.setItem(STORE_COMMENTS, JSON.stringify(comments)); } catch (e) {}
+    this.setState({ comments });
   }
   postComment() {
     const text = this.state.commentDraft.trim();
@@ -514,9 +561,23 @@ class Component extends DCLogic {
     if (hidden[id]) delete hidden[id]; else hidden[id] = true;
     try { localStorage.setItem(STORE_HIDDEN, JSON.stringify(hidden)); } catch (e) {}
     const showHidden = this.state.showHidden && Object.keys(hidden).length ? this.state.showHidden : false;
+    const prevOrder = this.state.order;
     this.setState({ hidden, showHidden }, () => {
-      const v = this.visible();
-      if (v.indexOf(this.state.sel) < 0 && v.length) this.select(v[0]); else this.paint();
+      // Hiding a thumbnail removes it from the filmstrip's DOM, which can
+      // trigger the map container's ResizeObserver (see initMap). That
+      // observer's own invalidateSize() is deferred to the next frame to
+      // avoid corrupting Leaflet's internal state mid-repaint — deferring
+      // this callback's map work to the same frame keeps the two in sync
+      // instead of racing each other.
+      requestAnimationFrame(() => {
+        const v = this.visible();
+        if (v.indexOf(this.state.sel) >= 0) { this.paint(); return; }
+        // stay near where we were: pick the closest still-visible frame by position in the full order
+        const fromPos = prevOrder.indexOf(i);
+        let best = v[0], bestDist = Infinity;
+        v.forEach(vi => { const d = Math.abs(prevOrder.indexOf(vi) - fromPos); if (d < bestDist) { bestDist = d; best = vi; } });
+        if (best != null) this.select(best); else this.paint();
+      });
     });
   }
   toggleShowHidden = () => this.setState({ showHidden: !this.state.showHidden }, () => {
@@ -803,20 +864,27 @@ class Component extends DCLogic {
   frameSun(i) {
     const map = this.map;
     if (!map) return;
-    const z = map.getZoom(), size = map.getSize();
-    const base = Math.max(120, Math.min(230, Math.min(size.x, size.y) * 0.34));
-    const pad = base + 170; // ring radius + hour-pill/edge-label allowance
-    const topReserve = 16; // top margin
-    const bottomReserve = 16; // bottom margin (control strip now lives outside the map's own box)
-    const s = SHOTS[i];
-    const c = map.project([s.lat, s.lon], z);
-    const ringMin = c.subtract([pad, pad]), ringMax = c.add([pad, pad]);
-    const vpMin = map.project(map.containerPointToLatLng([0, topReserve]), z);
-    const vpMax = map.project(map.containerPointToLatLng([size.x, size.y - bottomReserve]), z);
-    let dx = 0, dy = 0;
-    if (ringMin.x < vpMin.x) dx = ringMin.x - vpMin.x; else if (ringMax.x > vpMax.x) dx = ringMax.x - vpMax.x;
-    if (ringMin.y < vpMin.y) dy = ringMin.y - vpMin.y; else if (ringMax.y > vpMax.y) dy = ringMax.y - vpMax.y;
-    if (dx || dy) map.panBy([dx, dy], { animate: true, duration: .5 });
+    // Same renderer-race hazard as paint()/paintNow() above (see the
+    // ResizeObserver comment) — a resize landing mid-calculation here can
+    // hand back stale/undefined map internals. Skip this pan rather than crash.
+    try {
+      const z = map.getZoom(), size = map.getSize();
+      const base = Math.max(120, Math.min(230, Math.min(size.x, size.y) * 0.34));
+      const pad = base + 170; // ring radius + hour-pill/edge-label allowance
+      const topReserve = 16; // top margin
+      const bottomReserve = 16; // bottom margin (control strip now lives outside the map's own box)
+      const s = SHOTS[i];
+      const c = map.project([s.lat, s.lon], z);
+      const ringMin = c.subtract([pad, pad]), ringMax = c.add([pad, pad]);
+      const vpMin = map.project(map.containerPointToLatLng([0, topReserve]), z);
+      const vpMax = map.project(map.containerPointToLatLng([size.x, size.y - bottomReserve]), z);
+      let dx = 0, dy = 0;
+      if (ringMin.x < vpMin.x) dx = ringMin.x - vpMin.x; else if (ringMax.x > vpMax.x) dx = ringMax.x - vpMax.x;
+      if (ringMin.y < vpMin.y) dy = ringMin.y - vpMin.y; else if (ringMax.y > vpMax.y) dy = ringMax.y - vpMax.y;
+      if (dx || dy) map.panBy([dx, dy], { animate: true, duration: .5 });
+    } catch (e) {
+      console.warn('frameSun: skipped a pan after a renderer error', e);
+    }
   }
 
   step(dir) {
@@ -831,6 +899,8 @@ class Component extends DCLogic {
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     if (e.key === 'ArrowLeft') { e.preventDefault(); this.step(-1); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); this.step(1); }
+    else if (e.key === '1' || e.key === '2' || e.key === '3') { e.preventDefault(); this.requestName(() => this.setRating(this.state.sel, Number(e.key))); }
+    else if (e.key === 'h' || e.key === 'H') { e.preventDefault(); this.toggleHidden(this.state.sel); }
   };
 
   setMapMode = mode => {
@@ -1011,14 +1081,28 @@ class Component extends DCLogic {
       onNameKeyDown: e => { if (e.key === 'Enter') this.confirmName(); },
       confirmName: () => this.confirmName(),
       cancelNamePrompt: () => this.cancelNamePrompt(),
-      shotComments: (this.state.comments[s.id] || []).map((c, ci) => ({ ...c, key: ci,
-        timeLabel: new Date(c.ts).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' }) })),
+      shotComments: (this.state.comments[s.id] || []).map((c, ci) => {
+        const key = s.id + ':' + ci;
+        const mine = c.name && c.name === this.state.userName;
+        return {
+          ...c, key: ci, mine, isEditing: this.state.editingComment === key,
+          timeLabel: new Date(c.ts).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' }) + (c.editedTs ? ' (edited)' : ''),
+          editDraft: this.state.editCommentDraft,
+          onEditDraftChange: e => this.setState({ editCommentDraft: e.target.value }),
+          onEditKeyDown: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.saveEditComment(s.id, ci); } if (e.key === 'Escape') this.cancelEditComment(); },
+          onStartEdit: () => this.startEditComment(s.id, ci, c.text),
+          onCancelEdit: () => this.cancelEditComment(),
+          onSaveEdit: () => this.saveEditComment(s.id, ci),
+          onDelete: () => this.deleteComment(s.id, ci),
+        };
+      }),
       hasComments: !!(this.state.comments[s.id] || []).length,
       commentDraft: this.state.commentDraft,
       onCommentInput: e => this.setState({ commentDraft: e.target.value }),
       postComment: () => this.postComment(),
       showAll: () => this.setState({ starFilter: [], showHidden: false }, () => this.paint()),
       allStyle: this.state.starFilter.length ? chipOff : chipOn,
+      allLabel: `All ${SHOTS.length}`,
       showHidden: this.state.showHidden,
       hiddenCount: Object.keys(this.state.hidden).length,
       hasHidden: Object.keys(this.state.hidden).length > 0 || this.state.showHidden,
@@ -1036,7 +1120,7 @@ class Component extends DCLogic {
           fill: active ? p.fav : 'none', stroke: active ? p.fav : p.soft,
         };
       }),
-      starFilterCount: this.state.starFilter.length ? this.visible().length : 20,
+      starFilterCount: this.state.starFilter.length ? this.visible().length : SHOTS.length,
       ghostStyle: chipOff,
       p0: setPal(0), p1: setPal(1), p2: setPal(2), p3: setPal(3), p4: setPal(4), p5: setPal(5),
       p0on: this.state.pal === 0 ? 'on' : '', p1on: this.state.pal === 1 ? 'on' : '',
