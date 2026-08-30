@@ -6,6 +6,17 @@
 [functions]
   node_bundler = "esbuild"
 
+# Projects list is the homepage for now — shows /projects.html's content
+# at the root URL without an actual redirect (so the address bar stays
+# clean), leaving /projects.html itself working too. force=true because an
+# index.html (the demo map) already exists at "/" and would otherwise be
+# served directly instead of this rule ever being consulted.
+[[redirects]]
+  from = "/"
+  to = "/projects.html"
+  status = 200
+  force = true
+
 # Friendly /api/* URLs that map onto the actual function files.
 [[redirects]]
   from = "/api/jobs"
