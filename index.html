@@ -13,9 +13,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #241f19; overflow: hidden; }
+    html, body { margin: 0; padding: 0; height: 100%; background: #182028; overflow: hidden; }
     a { color: var(--ui-accent); } a:hover { color: var(--ui-deep); }
-    .leaflet-container { background: #241f19; font-family: var(--font-body); }
+    .leaflet-container { background: #182028; font-family: var(--font-body); }
     .leaflet-tile-pane { filter: var(--ui-tiles); }
     .leaflet-control-attribution { background: rgba(255,255,255,.72) !important; font-size: 10px !important; color: #333 !important; }
     .leaflet-bar a { color: #221f1c !important; }
@@ -41,10 +41,11 @@
     .navbtn { border: 2px solid var(--ui-line); background: transparent; cursor: pointer; width: 38px; height: 38px;
       border-radius: 999px; font-size: 17px; line-height: 1; color: var(--ui-ink); font-family: var(--font-body); }
     .navbtn:hover { background: var(--ui-hover); }
+    .resizer:hover .resizer-grip, .resizer:active .resizer-grip { background: var(--ui-accent); }
   </style>
 </helmet>
 
-<div style="position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #241f19; font-family: var(--font-body); color: var(--ui-ink); display: flex">
+<div style="position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #182028; font-family: var(--font-body); color: var(--ui-ink); display: flex">
 
   <div style="width: {{ leftWidth }}px; flex: none; height: 100%; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; padding: 20px">
     <div style="background: var(--ui-panel); border-radius: var(--radius-lg); padding: 16px 20px 18px; box-shadow: var(--shadow-lg); flex: none">
@@ -189,12 +190,16 @@
 
   </div>
 
-  <div onMouseDown="{{ onDragStart }}" style="width: 10px; flex: none; height: 100%; cursor: col-resize; position: relative; z-index: 600">
-    <div style="position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 4px; height: 46px; border-radius: 999px; background: var(--ui-line)"></div>
+  <div onMouseDown="{{ onDragStart }}" class="resizer" title="Drag to resize" style="width: 14px; flex: none; height: 100%; cursor: col-resize; position: relative; z-index: 600; display: flex; align-items: center; justify-content: center">
+    <div class="resizer-grip" style="width: 5px; height: 56px; border-radius: 999px; background: var(--ui-line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: background .15s ease">
+      <span style="width: 3px; height: 3px; border-radius: 999px; background: var(--ui-soft)"></span>
+      <span style="width: 3px; height: 3px; border-radius: 999px; background: var(--ui-soft)"></span>
+      <span style="width: 3px; height: 3px; border-radius: 999px; background: var(--ui-soft)"></span>
+    </div>
   </div>
 
   <div style="flex: 1 1 auto; position: relative; height: 100%; min-width: 0">
-    <div ref="{{ mapRef }}" style="position: absolute; inset: 0"></div>
+    <div ref="{{ mapRef }}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 110px"></div>
     <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; z-index: 500; display: flex; justify-content: center">
       <div style="background: var(--ui-panel); border-radius: 18px; box-shadow: var(--shadow-lg); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; padding: 8px 12px; font-size: 12px; max-width: 100%">
 
@@ -319,7 +324,7 @@ const loadName = () => { try { return localStorage.getItem(STORE_NAME) || ''; } 
 const loadComments = () => { try { return JSON.parse(localStorage.getItem(STORE_COMMENTS)) || {}; } catch (e) { return {}; } };
 
 class Component extends DCLogic {
-  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 5, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false };
+  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false };
 
   startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
   onTitleInput = e => this.setState({ titleDraft: e.target.value });
@@ -500,7 +505,7 @@ class Component extends DCLogic {
     });
 
     const b = L.latLngBounds(SHOTS.map(s => [s.lat, s.lon])).pad(0.35);
-    map.fitBounds(b, { animate: false, maxZoom: 17.5, paddingTopLeft: [16, 60], paddingBottomRight: [16, 150] });
+    map.fitBounds(b, { animate: false, maxZoom: 17.5, paddingTopLeft: [16, 16], paddingBottomRight: [16, 16] });
     if (map.getZoom() < 16.5) map.setZoom(16.5, { animate: false });
     map.on('zoomend', () => { this.drawSun(); this.paint(); });
     this._resizeObs = new ResizeObserver(() => map.invalidateSize());
@@ -698,8 +703,8 @@ class Component extends DCLogic {
     const z = map.getZoom(), size = map.getSize();
     const base = Math.max(120, Math.min(230, Math.min(size.x, size.y) * 0.34));
     const pad = base + 170; // ring radius + hour-pill/edge-label allowance
-    const topReserve = 16; // top margin only, control strip now lives at the bottom
-    const bottomReserve = 150; // control-strip height + margin
+    const topReserve = 16; // top margin
+    const bottomReserve = 16; // bottom margin (control strip now lives outside the map's own box)
     const s = SHOTS[i];
     const c = map.project([s.lat, s.lon], z);
     const ringMin = c.subtract([pad, pad]), ringMax = c.add([pad, pad]);
@@ -823,8 +828,9 @@ class Component extends DCLogic {
         onDragOver: e => e.preventDefault(),
         onDrop: e => { e.preventDefault(); if (this.dragI != null) this.reorder(this.dragI, i); this.dragI = null; },
         style: `width:${tw}px; height:${th}px; object-fit:cover; border-radius:8px; display:block; cursor:grab; ` +
-          `border:2.5px solid ${on ? p.ink : (rt > 0 ? p.accent : 'transparent')}; ` +
-          `box-shadow:${on ? '0 0 0 2px ' + p.halo : 'none'}; opacity:${on ? 1 : .82}; transition:opacity .15s`,
+          `border:2.5px solid ${on ? p.accent : 'transparent'}; ` +
+          `box-shadow:${on ? '0 0 0 3px ' + p.halo + ', 0 4px 12px rgba(0,0,0,.25)' : 'none'}; opacity:${on ? 1 : .78}; ` +
+          `transform:scale(${on ? 1.06 : 1}); transition:opacity .15s, transform .15s, border-color .15s`,
         hasStars: rt > 0, starIcons: this.starIcons(rt, 13),
         hasComment: !!(this.state.comments[SHOTS[i].id] || []).length,
       };
