@@ -421,7 +421,17 @@ class Component extends DCLogic {
     this.lib = await import('./photo-sun.js');
     for (let i = 0; i < 150 && !window.L; i++) await new Promise(r => setTimeout(r, 60));
     this.applyPalette(this.state.pal);
-    this.setState({ ready: true }, () => this.initMap());
+    // leftWidth is computed from window.innerWidth at initial state creation,
+    // which can run before the real browser viewport is sized (e.g. during
+    // streamed/prerendered mount) and lock in 0. Correct it once mounted.
+    const fixedLeftWidth = this.state.leftWidth > 0 ? this.state.leftWidth : Math.round(window.innerWidth / 2);
+    this.setState({ ready: true, leftWidth: fixedLeftWidth }, () => {
+      this.initMap();
+      // The framework's first post-mount paint can miss this attribute
+      // (see componentDidMount comment above); a follow-up no-op state
+      // update forces the correct repaint, same as any user interaction does.
+      requestAnimationFrame(() => this.setState({ leftWidth: this.state.leftWidth }));
+    });
   }
 
   applyPalette(i) {
