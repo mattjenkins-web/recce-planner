@@ -1,0 +1,10 @@
+{
+  "name": "recce-planner",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Recce Planner — shoot light-scouting tool (static site + Netlify Functions backend)",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0",
+    "exifr": "^7.1.3"
+  }
+}
