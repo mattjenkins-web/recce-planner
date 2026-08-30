@@ -1,7 +1,8 @@
 // GET /api/photo?id=xxx -> streams the raw image bytes back out
-const { store, badRequest, notFound, serverError } = require('./lib/_lib');
+const { store, connectLambda, badRequest, notFound, serverError } = require('./lib/_lib');
 
 exports.handler = async (event) => {
+  connectLambda(event);
   try {
     if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'Method not allowed' };
     const id = event.queryStringParameters && event.queryStringParameters.id;

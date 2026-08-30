@@ -1,5 +1,5 @@
 // Shared helpers used by all the Recce Planner API functions.
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 
 // One blob store holds everything: job/location indexes as small JSON
 // documents, plus the raw photo bytes. Keys are namespaced by path so it
@@ -49,4 +49,4 @@ function parseBody(event) {
   }
 }
 
-module.exports = { store, json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody };
+module.exports = { store, connectLambda, json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody };

@@ -8,7 +8,7 @@
 // missing from EXIF entirely (most cameras never record them), so manual
 // values passed in the request always win over anything auto-detected.
 const exifr = require('exifr');
-const { store, json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } = require('./lib/_lib');
+const { store, connectLambda, json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } = require('./lib/_lib');
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8MB raw image ceiling (well under the ~6MB base64 request limit once accounted for, see README note)
 
@@ -41,6 +41,7 @@ async function extractExif(buffer) {
 }
 
 exports.handler = async (event) => {
+  connectLambda(event);
   try {
     const q = event.queryStringParameters || {};
 

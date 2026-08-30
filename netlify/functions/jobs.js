@@ -1,10 +1,13 @@
 // GET  /api/jobs           -> list jobs
 // POST /api/jobs {name}    -> create a job, returns the new job record
-const { json, badRequest, serverError, newId, readJSON, writeJSON, parseBody } = require('./lib/_lib');
+const { connectLambda, json, badRequest, serverError, newId, readJSON, writeJSON, parseBody } = require('./lib/_lib');
 
 const INDEX_KEY = 'jobs/index.json';
 
 exports.handler = async (event) => {
+  // Classic (Lambda-compatibility) functions don't get Blobs credentials
+  // injected automatically — this wires them up from the invocation event.
+  connectLambda(event);
   try {
     if (event.httpMethod === 'GET') {
       const jobs = await readJSON(INDEX_KEY, []);

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/organic-10521182-e334-4d5b-bf56-257cb7503073/styles.css">
+  <script src="_ds/organic-10521182-e334-4d5b-bf56-257cb7503073/_ds_bundle.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #182028; }
+    a { color: #eef1f4; text-decoration: none; }
+    a:hover { color: #cfe0ee; }
+    input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid #2f6f9f !important; outline-offset: 2px; }
+  </style>
+</helmet>
+
+<div style="min-height: 100vh; background: #182028; font-family: var(--font-body); box-sizing: border-box">
+
+  <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width: 1080px; margin: 0 auto; padding: 44px 24px 90px">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px">
+        <div style="font-family: var(--font-heading); font-size: 28px; color: #eef1f4">Recce</div>
+        <button onClick="{{ startNewProject }}" style="background: #2f6f9f; color: #eef1f4; border: none; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px">
+        <a href="index.html">
+          <div style="background: #eef1f4; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 26px rgba(0,0,0,.4); cursor: pointer">
+            <div style="height: 120px; background: linear-gradient(135deg, #1f4d70, #2f6f9f); position: relative">
+              <div style="position: absolute; bottom: 12px; left: 14px; width: 28px; height: 28px; border-radius: 999px; background: #eef1f4; border: 2px solid #2f6f9f; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #1f4d70">01</div>
+            </div>
+            <div style="padding: 16px 16px 18px">
+              <div style="font-family: var(--font-heading); font-size: 18px; color: #1a2430; margin-bottom: 4px">Eats Eats Phew — C7 Promo</div>
+              <div style="font-size: 12px; color: #5c6b7a">1 location · 20 frames · shoot 02.09.26</div>
+            </div>
+          </div>
+        </a>
+        <button onClick="{{ startNewProject }}" style="border: 2px dashed rgba(238,241,244,.32); background: transparent; border-radius: 16px; min-height: 190px; display: flex; align-items: center; justify-content: center; color: rgba(238,241,244,.6); font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ !isList }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width: 760px; margin: 0 auto; padding: 40px 24px 100px">
+      <button onClick="{{ backToList }}" style="background: none; border: none; color: rgba(238,241,244,.7); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; font-family: var(--font-body)">← All projects</button>
+
+      <div style="background: #eef1f4; border-radius: 20px; padding: 28px 28px 32px; box-shadow: 0 10px 26px rgba(0,0,0,.4); margin-top: 18px">
+        <div style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #1f4d70; font-weight: 700; margin-bottom: 8px">New job</div>
+        <input value="{{ jobName }}" onChange="{{ onJobNameInput }}" placeholder="Untitled job" style="font-family: var(--font-heading); font-size: 30px; border: none; background: transparent; color: #1a2430; width: 100%; outline: none; margin-bottom: 16px; padding: 0; box-sizing: border-box">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #1a2430; margin-bottom: 26px">
+          <span>Shoot date</span>
+          <input type="date" value="{{ shootDate }}" onChange="{{ onShootDateInput }}" style="font-size: 13px; font-weight: 700; border: 1px solid rgba(26,36,48,.16); border-radius: 6px; padding: 3px 8px; background: rgba(47,111,159,.06); color: #1a2430; font-family: var(--font-body)">
+        </div>
+
+        <div style="font-family: var(--font-heading); font-size: 16px; color: #1a2430; margin-bottom: 12px">Locations</div>
+
+        <sc-for list="{{ locationSections }}" as="ls" hint-placeholder-count="0">
+          <div style="margin-bottom: 20px">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+              <div style="font-size: 14px; font-weight: 700; color: #1a2430">{{ ls.name }}</div>
+              <div style="font-size: 12px; color: #5c6b7a">{{ ls.count }} photo(s)</div>
+            </div>
+            <div onDragOver="{{ ls.onDragOver }}" onDragLeave="{{ ls.onDragLeave }}" onDrop="{{ ls.onDrop }}" onClick="{{ ls.onBrowse }}" style="{{ ls.dropStyle }}">
+              <input ref="{{ ls.fileInputRef }}" type="file" accept="image/*" multiple="{{ true }}" onChange="{{ ls.onFileChange }}" style="display: none">
+              <sc-if value="{{ ls.empty }}" hint-placeholder-val="{{ true }}">
+                <div style="text-align: center; color: #5c6b7a; font-size: 13px">
+                  <div style="font-size: 20px; margin-bottom: 6px; color: #2f6f9f">+</div>
+                  Drag photos here, or click to browse
+                </div>
+              </sc-if>
+              <sc-if value="{{ !ls.empty }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                  <sc-for list="{{ ls.photos }}" as="ph" hint-placeholder-count="0">
+                    <img src="{{ ph.url }}" alt="{{ ph.name }}" style="width: 64px; height: 64px; object-fit: cover; border-radius: 8px">
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{ !addingLocation }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ startAddLocation }}" style="border: 2px solid rgba(26,36,48,.18); background: transparent; border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 700; color: #1a2430; cursor: pointer; font-family: var(--font-body)">+ Add location</button>
+        </sc-if>
+        <sc-if value="{{ addingLocation }}" hint-placeholder-val="{{ false }}">
+          <input ref="{{ newLocationInputRef }}" value="{{ newLocationDraft }}" onChange="{{ onNewLocationInput }}" onKeyDown="{{ onNewLocationKey }}" onBlur="{{ cancelAddLocation }}" placeholder="e.g. Melbourne Cricket Ground" style="font-size: 13px; padding: 9px 14px; border-radius: 999px; border: 1px solid rgba(26,36,48,.2); background: #fff; width: 240px; font-family: var(--font-body); color: #1a2430; box-sizing: border-box">
+        </sc-if>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(26,36,48,.1)">
+          <button onClick="{{ createProject }}" style="{{ createBtnStyle }} border: none; border-radius: 999px; padding: 12px 24px; font-size: 14px; font-weight: 700; font-family: var(--font-body)">Create project</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+class Component extends DCLogic {
+  state = { view: 'list', jobName: '', shootDate: todayISO(), locations: [], addingLocation: false, newLocationDraft: '', dragOverLoc: null };
+
+  startNewProject = () => this.setState({ view: 'new', jobName: '', shootDate: todayISO(), locations: [], addingLocation: false, newLocationDraft: '' });
+  backToList = () => this.setState({ view: 'list' });
+  onJobNameInput = e => this.setState({ jobName: e.target.value });
+  onShootDateInput = e => this.setState({ shootDate: e.target.value });
+
+  startAddLocation = () => this.setState({ addingLocation: true, newLocationDraft: '' });
+  onNewLocationInput = e => this.setState({ newLocationDraft: e.target.value });
+  cancelAddLocation = () => this.setState({ addingLocation: false, newLocationDraft: '' });
+  newLocationInputRef = el => { if (el) el.focus(); };
+  onNewLocationKey = e => {
+    if (e.key === 'Enter') {
+      const name = this.state.newLocationDraft.trim();
+      if (!name) { this.cancelAddLocation(); return; }
+      const id = 'loc' + Date.now();
+      this.setState({ locations: [...this.state.locations, { id, name, photos: [] }], addingLocation: false, newLocationDraft: '' });
+    } else if (e.key === 'Escape') this.cancelAddLocation();
+  };
+
+  addPhotos(locId, files) {
+    const items = Array.from(files).filter(f => f.type.indexOf('image/') === 0).map(f => ({ name: f.name, url: URL.createObjectURL(f) }));
+    if (!items.length) return;
+    this.setState({ locations: this.state.locations.map(l => l.id === locId ? { ...l, photos: [...l.photos, ...items] } : l) });
+  }
+  setDragOver = locId => this.setState({ dragOverLoc: locId });
+  clearDragOver = () => this.setState({ dragOverLoc: null });
+
+  createProject = () => { alert('Project created (prototype) — photo upload + map generation wire up next.'); };
+
+  renderVals() {
+    const locations = this.state.locations;
+    const locationSections = locations.map(l => {
+      const empty = l.photos.length === 0;
+      const dragOver = this.state.dragOverLoc === l.id;
+      return {
+        name: l.name, count: l.photos.length, empty, photos: l.photos,
+        fileInputRef: el => { l._input = el; },
+        onBrowse: () => { if (l._input) l._input.click(); },
+        onFileChange: e => { this.addPhotos(l.id, e.target.files); e.target.value = ''; },
+        onDragOver: e => { e.preventDefault(); this.setDragOver(l.id); },
+        onDragLeave: () => this.clearDragOver(),
+        onDrop: e => { e.preventDefault(); this.clearDragOver(); this.addPhotos(l.id, e.dataTransfer.files); },
+        dropStyle: `border:2px dashed ${dragOver ? 'rgba(47,111,159,.6)' : 'rgba(26,36,48,.18)'}; border-radius:12px; min-height:110px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${dragOver ? 'rgba(47,111,159,.08)' : 'transparent'}; padding:12px; transition:background .15s,border-color .15s; box-sizing:border-box`,
+      };
+    });
+    const canCreate = this.state.jobName.trim().length > 0 && locations.length > 0;
+    return {
+      isList: this.state.view === 'list',
+      startNewProject: this.startNewProject, backToList: this.backToList,
+      jobName: this.state.jobName, onJobNameInput: this.onJobNameInput,
+      shootDate: this.state.shootDate, onShootDateInput: this.onShootDateInput,
+      addingLocation: this.state.addingLocation, newLocationDraft: this.state.newLocationDraft,
+      startAddLocation: this.startAddLocation, onNewLocationInput: this.onNewLocationInput,
+      onNewLocationKey: this.onNewLocationKey, cancelAddLocation: this.cancelAddLocation, newLocationInputRef: this.newLocationInputRef,
+      locationSections,
+      createBtnStyle: canCreate ? 'background:#2f6f9f; color:#eef1f4; cursor:pointer;' : 'background:rgba(26,36,48,.12); color:rgba(26,36,48,.4); cursor:not-allowed;',
+      createProject: this.createProject,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

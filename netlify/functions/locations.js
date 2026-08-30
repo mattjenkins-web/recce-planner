@@ -1,8 +1,9 @@
 // GET  /api/locations?jobId=xxx          -> list locations for a job
 // POST /api/locations {jobId, name}      -> add a location to a job
-const { json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } = require('./lib/_lib');
+const { connectLambda, json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } = require('./lib/_lib');
 
 exports.handler = async (event) => {
+  connectLambda(event);
   try {
     const jobId = event.queryStringParameters && event.queryStringParameters.jobId;
 

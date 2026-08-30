@@ -106,6 +106,9 @@
           </div>
         </sc-if>
         <button class="chip" onClick="{{ showAll }}" style="{{ allStyle }} padding: 5px 11px; font-size: 12px;">All 20</button>
+        <sc-if value="{{ hasHidden }}" hint-placeholder-val="{{ false }}">
+          <button class="chip" onClick="{{ toggleShowHidden }}" style="{{ hiddenStyle }} padding: 5px 11px; font-size: 12px;">Hidden {{ hiddenCount }}</button>
+        </sc-if>
         <div style="display: flex; align-items: center; gap: 5px; background: var(--ui-hover); border-radius: 999px; padding: 5px 10px">
           <sc-for list="{{ starFilterChips }}" as="sf" hint-placeholder-count="3">
             <button onClick="{{ sf.onClick }}" aria-label="Toggle {{ sf.n }}-star filter" style="border: none; background: none; cursor: pointer; padding: 1px; line-height: 0; display: flex">
@@ -139,6 +142,9 @@
       <button class="navbtn" onClick="{{ next }}" aria-label="Next frame">›</button>
     </div>
     <div ref="{{ thumbStripRef }}" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 8px; padding: 3px 2px 6px; flex: none">
+      <sc-if value="{{ showHidden }}" hint-placeholder-val="{{ false }}">
+        <div style="flex: none; align-self: center; font-size: 11px; color: var(--ui-soft); padding: 0 6px; white-space: nowrap">Viewing hidden frames — click the eye icon to restore</div>
+      </sc-if>
       <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="6">
         <div ref="{{ t.nodeRef }}" draggable="true" onDragStart="{{ t.onDragStart }}" onDragOver="{{ t.onDragOver }}" onDrop="{{ t.onDrop }}" style="flex: none; text-align: center">
           <div style="position: relative">
@@ -151,6 +157,14 @@
                 <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="var(--ui-panel)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
               </div>
             </sc-if>
+            <button onClick="{{ t.onHide }}" title="{{ t.hideLabel }}" aria-label="{{ t.hideLabel }}" style="position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 999px; background: rgba(20,20,20,.6); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0" style-hover="background: rgba(20,20,20,.85)">
+              <sc-if value="{{ t.hiddenFlag }}" hint-placeholder-val="{{ false }}">
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </sc-if>
+              <sc-if value="{{ !t.hiddenFlag }}" hint-placeholder-val="{{ true }}">
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6.5 0-10-7-10-7a18.4 18.4 0 0 1 4.06-5.06M9.9 4.24A10.94 10.94 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              </sc-if>
+            </button>
           </div>
           <div style="font-size: 10px; color: var(--ui-soft); margin-top: 3px">Frame {{ t.id }}</div>
         </div>
@@ -283,6 +297,7 @@ const TZ = { timeZone: 'Australia/Melbourne', hour: 'numeric', minute: '2-digit'
 const STORE = 'recce-c7-favourites';
 const STORE_NAME = 'recce-c7-username';
 const STORE_COMMENTS = 'recce-c7-comments';
+const STORE_HIDDEN = 'recce-c7-hidden';
 const initialsOf = name => (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 
 const PALETTES = [
@@ -322,9 +337,10 @@ const loadFavs = () => {
 };
 const loadName = () => { try { return localStorage.getItem(STORE_NAME) || ''; } catch (e) { return ''; } };
 const loadComments = () => { try { return JSON.parse(localStorage.getItem(STORE_COMMENTS)) || {}; } catch (e) { return {}; } };
+const loadHidden = () => { try { return JSON.parse(localStorage.getItem(STORE_HIDDEN)) || {}; } catch (e) { return {}; } };
 
 class Component extends DCLogic {
-  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false };
+  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false };
 
   startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
   onTitleInput = e => this.setState({ titleDraft: e.target.value });
@@ -456,7 +472,26 @@ class Component extends DCLogic {
   fov(s) { return FOV[s.mm] || FOV[24]; }
   rating(i) { return this.state.favs[SHOTS[i].id] || 0; }
   isFav(i) { return this.rating(i) > 0; }
-  visible() { return this.state.starFilter.length ? this.state.order.filter(i => this.state.starFilter.indexOf(this.rating(i)) >= 0) : this.state.order; }
+  visible() {
+    const base = this.state.starFilter.length ? this.state.order.filter(i => this.state.starFilter.indexOf(this.rating(i)) >= 0) : this.state.order;
+    return this.state.showHidden ? base.filter(i => this.state.hidden[SHOTS[i].id]) : base.filter(i => !this.state.hidden[SHOTS[i].id]);
+  }
+  toggleHidden(i) {
+    const id = SHOTS[i].id;
+    const hidden = { ...this.state.hidden };
+    if (hidden[id]) delete hidden[id]; else hidden[id] = true;
+    try { localStorage.setItem(STORE_HIDDEN, JSON.stringify(hidden)); } catch (e) {}
+    const showHidden = this.state.showHidden && Object.keys(hidden).length ? this.state.showHidden : false;
+    this.setState({ hidden, showHidden }, () => {
+      const v = this.visible();
+      if (v.indexOf(this.state.sel) < 0 && v.length) this.select(v[0]); else this.paint();
+    });
+  }
+  toggleShowHidden = () => this.setState({ showHidden: !this.state.showHidden }, () => {
+    const v = this.visible();
+    if (v.length) this.select(v[0]);
+    this.paint();
+  });
   events() {
     if (!this.lib) return null;
     if (!this._ev) this._ev = this.lib.sunEvents(this.date(720), SITE.lat, SITE.lon);
@@ -508,7 +543,18 @@ class Component extends DCLogic {
     map.fitBounds(b, { animate: false, maxZoom: 17.5, paddingTopLeft: [16, 16], paddingBottomRight: [16, 16] });
     if (map.getZoom() < 16.5) map.setZoom(16.5, { animate: false });
     map.on('zoomend', () => { this.drawSun(); this.paint(); });
-    this._resizeObs = new ResizeObserver(() => map.invalidateSize());
+    // Deferred to the next frame rather than calling invalidateSize() synchronously:
+    // a resize fired mid-way through our own paint() (e.g. right when hiding a
+    // filmstrip thumbnail reflows the layout) could reset the map's internal
+    // size/bounds while paint() is still iterating the cone polygons, corrupting
+    // their projected points and crashing Leaflet's renderer. Coalescing to one
+    // rAF avoids that interleaving.
+    let resizePending = false;
+    this._resizeObs = new ResizeObserver(() => {
+      if (resizePending) return;
+      resizePending = true;
+      requestAnimationFrame(() => { resizePending = false; map.invalidateSize(); });
+    });
     this._resizeObs.observe(el);
     this.drawSun();
     this.paint();
@@ -610,34 +656,47 @@ class Component extends DCLogic {
   /** The sun disc at the scrubbed time, with its ray onto the site. */
   paintNow() {
     if (!this.sunNow) return;
-    const L = window.L, { destination, sunPos } = this.lib, p = this.pal();
-    this.sunNow.clearLayers();
-    const s = this.shot();
-    const now = sunPos(this.date(this.state.minutes), s.lat, s.lon);
-    if (now.elevation < -1) return;
-    const map = this.map, z = map.getZoom(), size = map.getSize();
-    const px = Math.max(120, Math.min(230, Math.min(size.x, size.y) * 0.34)) * 0.6;
-    const a = (now.azimuth - 90) * RAD;
-    const at = map.unproject(map.project([s.lat, s.lon], z).add([Math.cos(a) * px, Math.sin(a) * px]), z);
-    L.polyline([at, [s.lat, s.lon]], { color: p.sun, weight: 3, opacity: .9, interactive: false }).addTo(this.sunNow);
-    const t = this.fmt(this.date(this.state.minutes));
-    L.marker(at, { interactive: false, zIndexOffset: 300,
-      icon: L.divIcon({ className: '', iconSize: [78, 78], iconAnchor: [39, 39],
-        html: '<div style="width:78px;height:78px;border-radius:999px;display:grid;place-items:center;' +
-              'background:radial-gradient(circle,' + p.sun + ' 0 46%,transparent 62%);">' +
-              '<span style="font:700 13px var(--font-body);color:' + p.ink + '">' + t + '</span></div>' }) }).addTo(this.sunNow);
+    // Leaflet's own renderer occasionally throws mid-update if a resize
+    // (see the ResizeObserver above) lands between two of our layer edits —
+    // never let that take the whole app down; just skip this repaint.
+    try {
+      const L = window.L, { destination, sunPos } = this.lib, p = this.pal();
+      this.sunNow.clearLayers();
+      const s = this.shot();
+      const now = sunPos(this.date(this.state.minutes), s.lat, s.lon);
+      if (now.elevation < -1) return;
+      const map = this.map, z = map.getZoom(), size = map.getSize();
+      const px = Math.max(120, Math.min(230, Math.min(size.x, size.y) * 0.34)) * 0.6;
+      const a = (now.azimuth - 90) * RAD;
+      const at = map.unproject(map.project([s.lat, s.lon], z).add([Math.cos(a) * px, Math.sin(a) * px]), z);
+      L.polyline([at, [s.lat, s.lon]], { color: p.sun, weight: 3, opacity: .9, interactive: false }).addTo(this.sunNow);
+      const t = this.fmt(this.date(this.state.minutes));
+      L.marker(at, { interactive: false, zIndexOffset: 300,
+        icon: L.divIcon({ className: '', iconSize: [78, 78], iconAnchor: [39, 39],
+          html: '<div style="width:78px;height:78px;border-radius:999px;display:grid;place-items:center;' +
+                'background:radial-gradient(circle,' + p.sun + ' 0 46%,transparent 62%);">' +
+                '<span style="font:700 13px var(--font-body);color:' + p.ink + '">' + t + '</span></div>' }) }).addTo(this.sunNow);
+    } catch (e) {
+      console.warn('paintNow: skipped a repaint after a renderer error', e);
+    }
   }
 
   paint() {
     if (!this.map || !this.lib) return;
     const sel = this.state.sel, vis = this.visible();
     this.cones.forEach((poly, i) => {
-      const on = i === sel, mode = this.state.coneMode;
-      const shown = mode !== 'off' && vis.indexOf(i) >= 0 && (mode === 'all' || on);
-      poly.setLatLngs(this.conePoints(SHOTS[i], on ? this.state.coneLen * 1.7 : undefined));
-      poly.setStyle({ color: this.pal().cone, fillColor: this.pal().cone,
-        opacity: shown ? (on ? 1 : .5) : 0, fillOpacity: shown ? (on ? .34 : .12) : 0 });
-      if (on) poly.bringToFront();
+      try {
+        const on = i === sel, mode = this.state.coneMode;
+        const shown = mode !== 'off' && vis.indexOf(i) >= 0 && (mode === 'all' || on);
+        poly.setLatLngs(this.conePoints(SHOTS[i], on ? this.state.coneLen * 1.7 : undefined));
+        poly.setStyle({ color: this.pal().cone, fillColor: this.pal().cone,
+          opacity: shown ? (on ? 1 : .5) : 0, fillOpacity: shown ? (on ? .34 : .12) : 0 });
+        if (on) poly.bringToFront();
+      } catch (e) {
+        // See the ResizeObserver comment above — a renderer hiccup on one
+        // cone shouldn't stop the rest of the frame from painting.
+        console.warn('paint: skipped a cone repaint after a renderer error', e);
+      }
     });
     this.pins.forEach((m, i) => {
       const node = m.getElement();
@@ -833,6 +892,9 @@ class Component extends DCLogic {
           `transform:scale(${on ? 1.06 : 1}); transition:opacity .15s, transform .15s, border-color .15s`,
         hasStars: rt > 0, starIcons: this.starIcons(rt, 13),
         hasComment: !!(this.state.comments[SHOTS[i].id] || []).length,
+        hiddenFlag: !!this.state.hidden[SHOTS[i].id],
+        hideLabel: this.state.hidden[SHOTS[i].id] ? 'Restore this frame' : 'Hide this frame',
+        onHide: e => { e.stopPropagation(); this.toggleHidden(i); },
       };
     });
     const now = lib ? lib.sunPos(this.date(this.state.minutes), s.lat, s.lon) : null;
@@ -911,8 +973,13 @@ class Component extends DCLogic {
       commentDraft: this.state.commentDraft,
       onCommentInput: e => this.setState({ commentDraft: e.target.value }),
       postComment: () => this.postComment(),
-      showAll: () => this.setState({ starFilter: [] }, () => this.paint()),
+      showAll: () => this.setState({ starFilter: [], showHidden: false }, () => this.paint()),
       allStyle: this.state.starFilter.length ? chipOff : chipOn,
+      showHidden: this.state.showHidden,
+      hiddenCount: Object.keys(this.state.hidden).length,
+      hasHidden: Object.keys(this.state.hidden).length > 0 || this.state.showHidden,
+      hiddenStyle: this.state.showHidden ? chipOn : chipOff,
+      toggleShowHidden: this.toggleShowHidden,
       starFilterChips: [1, 2, 3].map(n => {
         const active = this.state.starFilter.indexOf(n) >= 0;
         return {
