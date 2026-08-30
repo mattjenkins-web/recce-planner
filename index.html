@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/organic-10521182-e334-4d5b-bf56-257cb7503073/styles.css">
+  <script src="_ds/organic-10521182-e334-4d5b-bf56-257cb7503073/_ds_bundle.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #241f19; overflow: hidden; }
+    a { color: var(--ui-accent); } a:hover { color: var(--ui-deep); }
+    .leaflet-container { background: #241f19; font-family: var(--font-body); }
+    .leaflet-tile-pane { filter: var(--ui-tiles); }
+    .leaflet-control-attribution { background: rgba(255,255,255,.72) !important; font-size: 10px !important; color: #333 !important; }
+    .leaflet-bar a { color: #221f1c !important; }
+    .pin { display: grid; place-items: center; }
+    .pin-dot { width: 28px; height: 28px; border-radius: 999px; background: var(--ui-panel);
+      border: 2px solid var(--ui-accent); color: var(--ui-deep); font-family: var(--font-body); font-weight: 700;
+      font-size: 12px; display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.5);
+      transition: transform .16s ease; }
+    .pin-dot:hover { transform: scale(1.16); }
+    .pin.is-fav .pin-dot { background: var(--ui-fav); border-color: var(--ui-panel); color: var(--ui-fav-ink); }
+    .pin.is-sel .pin-dot { transform: scale(1.3); box-shadow: 0 0 0 4px var(--ui-halo), 0 3px 14px rgba(0,0,0,.55); }
+    .pin.is-hidden { display: none; }
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 999px;
+      background: var(--ui-track); outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 999px;
+      background: var(--ui-accent); border: 3px solid var(--ui-panel); box-shadow: var(--shadow-sm); cursor: grab; }
+    input[type=range]:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
+    .chip { border: none; cursor: pointer; font-family: var(--font-body); font-weight: 600; font-size: 13px;
+      padding: 8px 16px; border-radius: 999px; transition: background .15s, color .15s; }
+    .chip:focus-visible, .star:focus-visible, .navbtn:focus-visible {
+      outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+    .star { cursor: pointer; border: none; background: none; padding: 0; display: flex; align-items: center; gap: 9px; }
+    .navbtn { border: 2px solid var(--ui-line); background: transparent; cursor: pointer; width: 38px; height: 38px;
+      border-radius: 999px; font-size: 17px; line-height: 1; color: var(--ui-ink); font-family: var(--font-body); }
+    .navbtn:hover { background: var(--ui-hover); }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #241f19; font-family: var(--font-body); color: var(--ui-ink); display: flex">
+
+  <div style="width: {{ leftWidth }}px; flex: none; height: 100%; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; padding: 20px">
+    <div style="background: var(--ui-panel); border-radius: var(--radius-lg); padding: 16px 20px 18px; box-shadow: var(--shadow-lg); flex: none">
+      <div style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ui-deep); font-weight: 700">Recce · {{ activeLocName }}</div>
+
+      <sc-if value="{{ editingTitle }}" hint-placeholder-val="{{ false }}">
+        <input ref="{{ titleInputRef }}" value="{{ titleDraft }}" onChange="{{ onTitleInput }}" onKeyDown="{{ onTitleKey }}" onBlur="{{ commitTitle }}" style="font-family: var(--font-heading); font-size: 26px; line-height: 1.08; margin: 6px 0 10px; color: var(--ui-ink); background: var(--ui-hover); border: 1px solid var(--ui-line); border-radius: 8px; padding: 2px 6px; width: 100%; box-sizing: border-box; display: block">
+      </sc-if>
+      <sc-if value="{{ !editingTitle }}" hint-placeholder-val="{{ true }}">
+        <h1 onClick="{{ startEditTitle }}" title="Click to rename" style="font-family: var(--font-heading); font-size: 26px; line-height: 1.08; margin: 6px 0 10px; color: var(--ui-ink); cursor: text">{{ jobTitle }}</h1>
+      </sc-if>
+
+      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px">
+        <sc-for list="{{ locationChips }}" as="loc" hint-placeholder-count="1">
+          <button class="chip" onClick="{{ loc.onClick }}" style="{{ loc.style }} padding: 5px 12px; font-size: 12px">{{ loc.name }}</button>
+        </sc-for>
+        <sc-if value="{{ !addingLocation }}" hint-placeholder-val="{{ true }}">
+          <button class="navbtn" onClick="{{ startAddLocation }}" aria-label="Add location" style="width: 28px; height: 28px; font-size: 15px">+</button>
+        </sc-if>
+        <sc-if value="{{ addingLocation }}" hint-placeholder-val="{{ false }}">
+          <input ref="{{ newLocationInputRef }}" value="{{ newLocationDraft }}" onChange="{{ onNewLocationInput }}" onKeyDown="{{ onNewLocationKey }}" onBlur="{{ cancelAddLocation }}" placeholder="Location name" style="font-size: 12px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--ui-line); background: var(--ui-hover); color: var(--ui-ink); width: 160px">
+        </sc-if>
+      </div>
+
+      <div style="display: flex; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ui-ink)">
+        <span>Shoot date</span>
+        <sc-if value="{{ editingDate }}" hint-placeholder-val="{{ false }}">
+          <input ref="{{ dateInputRef }}" type="date" value="{{ shootDate }}" onChange="{{ onDateInput }}" onBlur="{{ stopEditDate }}" style="font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--ui-ink); background: var(--ui-hover); border: 1px solid var(--ui-line); border-radius: 6px; padding: 1px 6px">
+        </sc-if>
+        <sc-if value="{{ !editingDate }}" hint-placeholder-val="{{ true }}">
+          <span onClick="{{ startEditDate }}" title="Click to change shoot date" style="cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-decoration-color: var(--ui-soft); text-underline-offset: 3px">{{ shootDateLabel }}</span>
+        </sc-if>
+      </div>
+    </div>
+
+    <sc-if value="{{ activeIsMcg }}" hint-placeholder-val="{{ true }}">
+    <div style="flex: none; display: flex; flex-direction: column; background: var(--ui-panel); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-lg)">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px">
+      <div style="display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden">
+        <div style="width: 32px; height: 32px; border-radius: 999px; background: var(--ui-rose); border: 2px solid var(--ui-line); flex: none; position: relative">
+          <div style="position: absolute; inset: 0; transform: rotate({{ bearing }}deg); transition: transform .25s ease">
+            <svg viewBox="0 0 32 32" width="32" height="32">
+              <path d="M16 4 L20 17 L16 14.5 L12 17 Z" fill="var(--ui-accent)"></path>
+            </svg>
+          </div>
+        </div>
+        <div style="min-width: 0; overflow: hidden">
+          <div style="font-family: var(--font-heading); font-size: 21px; color: var(--ui-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Frame {{ label }}</div>
+          <div style="font-size: 12px; color: var(--ui-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap">scouted {{ clock }} · Looking {{ facing }} · {{ lens }} · tilt {{ tilt }}</div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--ui-deep); overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ sunLine }}</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex: none; padding-top: 2px">
+        <sc-if value="{{ userInitials }}" hint-placeholder-val="{{ false }}">
+          <div title="Signed in as {{ userName }}" style="display: flex; align-items: center; gap: 5px; padding: 3px 10px 3px 3px; background: var(--ui-hover); border-radius: 999px">
+            <div style="width: 22px; height: 22px; border-radius: 999px; background: var(--ui-accent); color: var(--ui-panel); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none">{{ userInitials }}</div>
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="var(--ui-fav)" stroke="var(--ui-fav)" stroke-width="2" stroke-linejoin="round"><path d="M12 3.5l2.7 5.6 6.1.8-4.4 4.3 1.1 6.1L12 17.4l-5.5 2.9 1.1-6.1L3.2 9.9l6.1-.8z"></path></svg>
+          </div>
+        </sc-if>
+        <button class="chip" onClick="{{ showAll }}" style="{{ allStyle }} padding: 5px 11px; font-size: 12px;">All 20</button>
+        <div style="display: flex; align-items: center; gap: 5px; background: var(--ui-hover); border-radius: 999px; padding: 5px 10px">
+          <sc-for list="{{ starFilterChips }}" as="sf" hint-placeholder-count="3">
+            <button onClick="{{ sf.onClick }}" aria-label="Toggle {{ sf.n }}-star filter" style="border: none; background: none; cursor: pointer; padding: 1px; line-height: 0; display: flex">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="{{ sf.fill }}" stroke="{{ sf.stroke }}" stroke-width="2" stroke-linejoin="round">
+                <path d="M12 3.5l2.7 5.6 6.1.8-4.4 4.3 1.1 6.1L12 17.4l-5.5 2.9 1.1-6.1L3.2 9.9l6.1-.8z"></path>
+              </svg>
+            </button>
+          </sc-for>
+          <span style="font-size: 12px; font-weight: 600; color: var(--ui-deep); margin-left: 2px">{{ starFilterCount }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 3px; margin-bottom: 10px">
+      <sc-for list="{{ ratingStars }}" as="rs" hint-placeholder-count="3">
+        <button onClick="{{ rs.onClick }}" aria-label="Rate {{ rs.n }} star" style="border: none; background: none; cursor: pointer; padding: 2px; line-height: 0">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="{{ rs.fill }}" stroke="{{ rs.stroke }}" stroke-width="2" stroke-linejoin="round">
+            <path d="M12 3.5l2.7 5.6 6.1.8-4.4 4.3 1.1 6.1L12 17.4l-5.5 2.9 1.1-6.1L3.2 9.9l6.1-.8z"></path>
+          </svg>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="position: relative; border-radius: var(--radius-md); overflow: hidden; aspect-ratio: 1.544; width: 100%; flex: none">
+      <img src="photos/shot-01.jpg" ref="{{ photoRef }}" alt="Frame" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; flex: none">
+      <button class="navbtn" onClick="{{ prev }}" aria-label="Previous frame">‹</button>
+      <div onMouseDown="{{ onThumbDragStart }}" style="width: 40px; height: 4px; border-radius: 999px; background: var(--ui-line); cursor: row-resize"></div>
+      <button class="navbtn" onClick="{{ next }}" aria-label="Next frame">›</button>
+    </div>
+    <div ref="{{ thumbStripRef }}" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 8px; padding: 3px 2px 6px; flex: none">
+      <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="6">
+        <div ref="{{ t.nodeRef }}" draggable="true" onDragStart="{{ t.onDragStart }}" onDragOver="{{ t.onDragOver }}" onDrop="{{ t.onDrop }}" style="flex: none; text-align: center">
+          <div style="position: relative">
+            <img ref="{{ t.imgRef }}" onClick="{{ t.onClick }}" alt="Frame {{ t.id }}" style="{{ t.style }}">
+            <sc-if value="{{ t.hasStars }}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; bottom: 4px; left: 4px; display: flex; gap: 1px">{{ t.starIcons }}</div>
+            </sc-if>
+            <sc-if value="{{ t.hasComment }}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 999px; background: var(--ui-accent); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,.4)">
+                <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="var(--ui-panel)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+              </div>
+            </sc-if>
+          </div>
+          <div style="font-size: 10px; color: var(--ui-soft); margin-top: 3px">Frame {{ t.id }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex: none; display: flex; flex-direction: column; gap: 10px; background: var(--ui-panel); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-lg)">
+    <div style="font-family: var(--font-heading); font-size: 15px; color: var(--ui-ink)">Comments · Frame {{ label }}</div>
+    <sc-if value="{{ hasComments }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto">
+        <sc-for list="{{ shotComments }}" as="c" hint-placeholder-count="2">
+          <div style="display: flex; gap: 8px; align-items: flex-start">
+            <div style="width: 26px; height: 26px; border-radius: 999px; background: var(--ui-accent); color: var(--ui-panel); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none">{{ c.initials }}</div>
+            <div style="min-width: 0">
+              <div style="font-size: 12px; font-weight: 700; color: var(--ui-ink)">{{ c.name }}<span style="font-weight: 500; color: var(--ui-soft); margin-left: 6px">{{ c.timeLabel }}</span></div>
+              <div style="font-size: 13px; color: var(--ui-ink); line-height: 1.4">{{ c.text }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div style="display: flex; gap: 8px; align-items: flex-end">
+      <textarea value="{{ commentDraft }}" onChange="{{ onCommentInput }}" placeholder="Add a comment on this frame…" rows="2" style="flex: 1; resize: none; box-sizing: border-box; border: 1px solid var(--ui-line); border-radius: 12px; padding: 8px 10px; font-family: var(--font-body); font-size: 13px; background: var(--ui-hover); color: var(--ui-ink)"></textarea>
+      <button class="chip" onClick="{{ postComment }}" style="background: var(--ui-accent); color: var(--ui-panel); padding: 8px 16px;">Post</button>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ !activeIsMcg }}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; background: var(--ui-panel); border-radius: var(--radius-lg); padding: 40px 24px; box-shadow: var(--shadow-lg); min-height: 220px">
+      <div>
+        <div style="font-family: var(--font-heading); font-size: 18px; color: var(--ui-ink); margin-bottom: 6px">{{ activeLocName }}</div>
+        <div style="font-size: 13px; color: var(--ui-soft); line-height: 1.5">No frames scouted here yet.<br>Upload stills to start planning camera positions.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  </div>
+
+  <div onMouseDown="{{ onDragStart }}" style="width: 10px; flex: none; height: 100%; cursor: col-resize; position: relative; z-index: 600">
+    <div style="position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 4px; height: 46px; border-radius: 999px; background: var(--ui-line)"></div>
+  </div>
+
+  <div style="flex: 1 1 auto; position: relative; height: 100%; min-width: 0">
+    <div ref="{{ mapRef }}" style="position: absolute; inset: 0"></div>
+    <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; z-index: 500; display: flex; justify-content: center">
+      <div style="background: var(--ui-panel); border-radius: 18px; box-shadow: var(--shadow-lg); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; padding: 8px 12px; font-size: 12px; max-width: 100%">
+
+        <span style="display: flex; align-items: center; gap: 5px; flex: none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ui-deep)" stroke-width="2"><polygon points="1 6 1 20 8 17 16 20 23 17 23 3 16 6 8 3 1 6"></polygon><line x1="8" y1="3" x2="8" y2="17"></line><line x1="16" y1="6" x2="16" y2="20"></line></svg>
+          <button class="chip" onClick="{{ setMapModeSat }}" style="{{ satStyleSm }}">Satellite</button>
+          <button class="chip" onClick="{{ setMapModeTerrain }}" style="{{ terrainStyleSm }}">Terrain</button>
+          <button class="chip" onClick="{{ toggleLabels }}" style="{{ labelsStyleSm }}">Roads</button>
+          <span style="color: var(--ui-soft); white-space: nowrap; font-size: 11px; margin-left: 2px">Opacity</span>
+          <input type="range" min="0" max="1" step="0.05" value="{{ mapOpacity }}" onChange="{{ onOpacityChange }}" onInput="{{ onOpacityChange }}" style="width: 50px">
+          <span style="color: var(--ui-soft); font-size: 11px; width: 30px; text-align: right">{{ mapOpacityPct }}</span>
+        </span>
+
+        <div style="width: 1px; height: 22px; background: var(--ui-line); flex: none"></div>
+
+        <span style="display: flex; align-items: center; gap: 5px; flex: none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ui-deep)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          <span style="color: var(--ui-soft); white-space: nowrap; font-size: 11px">Cones</span>
+          <button class="chip" onClick="{{ setConeOff }}" style="{{ coneOffStyle }}">Off</button>
+          <button class="chip" onClick="{{ setConeCurrent }}" style="{{ coneCurStyle }}">Current</button>
+          <button class="chip" onClick="{{ setConeAll }}" style="{{ coneAllStyle }}">All</button>
+        </span>
+
+        <div style="width: 1px; height: 22px; background: var(--ui-line); flex: none"></div>
+
+        <span style="display: flex; align-items: center; gap: 5px; flex: none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ui-deep)" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <span style="font-family: var(--font-heading); font-size: 14px; color: var(--ui-ink); white-space: nowrap">{{ scrubClock }}</span>
+          <button class="chip" onClick="{{ toggleSun }}" style="{{ sunToggleStyleSm }}">Sun</button>
+          <button class="chip" onClick="{{ resetTime }}" style="{{ ghostStyleSm }}">Frame time</button>
+          <input type="range" min="{{ dayMin }}" max="{{ dayMax }}" step="1" value="{{ minutes }}" onChange="{{ onScrub }}" onInput="{{ onScrub }}" style="width: 100px">
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ showNamePrompt }}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 2000; display: flex; align-items: center; justify-content: center">
+      <div style="background: var(--ui-panel); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 22px 24px; width: 320px; box-sizing: border-box">
+        <div style="font-family: var(--font-heading); font-size: 17px; color: var(--ui-ink); margin-bottom: 6px">What's your name?</div>
+        <div style="font-size: 12px; color: var(--ui-soft); margin-bottom: 12px">So your star picks and comments are signed.</div>
+        <input value="{{ nameDraft }}" onChange="{{ onNameInput }}" onKeyDown="{{ onNameKeyDown }}" autoFocus="{{ true }}" placeholder="e.g. Mia Jones" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--ui-line); font-family: var(--font-body); font-size: 14px; background: var(--ui-hover); color: var(--ui-ink)">
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px">
+          <button class="chip" onClick="{{ cancelNamePrompt }}" style="background: var(--ui-hover); color: var(--ui-ink)">Cancel</button>
+          <button class="chip" onClick="{{ confirmName }}" style="background: var(--ui-accent); color: var(--ui-panel)">Save</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1512,&quot;height&quot;:950},&quot;coneMetres&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:70,&quot;min&quot;:25,&quot;max&quot;:180,&quot;step&quot;:5,&quot;unit&quot;:&quot;m&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Map&quot;}}">
+const SHOTS = [
+  { id: '01', f: 'shot-01', lat: -37.8186972, lon: 144.9841667, bearing: 252, tilt: 5, mm: 24, t: '12:19:58' },
+  { id: '02', f: 'shot-02', lat: -37.8186500, lon: 144.9842056, bearing: 253, tilt: 5, mm: 24, t: '12:20:01' },
+  { id: '03', f: 'shot-03', lat: -37.8186889, lon: 144.9838972, bearing: 244, tilt: 8, mm: 24, t: '12:23:06' },
+  { id: '04', f: 'shot-04', lat: -37.8187278, lon: 144.9838333, bearing: 242, tilt: 6, mm: 24, t: '12:23:13' },
+  { id: '05', f: 'shot-05', lat: -37.8188750, lon: 144.9846833, bearing: 270, tilt: 7, mm: 24, t: '12:25:27' },
+  { id: '06', f: 'shot-06', lat: -37.8188750, lon: 144.9846833, bearing: 272, tilt: 6, mm: 24, t: '12:25:38' },
+  { id: '07', f: 'shot-07', lat: -37.8190111, lon: 144.9851361, bearing: 280, tilt: 5, mm: 24, t: '12:27:20' },
+  { id: '08', f: 'shot-08', lat: -37.8196778, lon: 144.9850056, bearing: 326, tilt: 5, mm: 24, t: '12:29:21' },
+  { id: '09', f: 'shot-09', lat: -37.8199417, lon: 144.9850917, bearing: 342, tilt: 7, mm: 24, t: '12:30:06' },
+  { id: '10', f: 'shot-10', lat: -37.8210306, lon: 144.9843028, bearing: 278, tilt: 4, mm: 24, t: '12:33:13' },
+  { id: '11', f: 'shot-11', lat: -37.8210528, lon: 144.9842500, bearing: 270, tilt: 7, mm: 24, t: '12:33:34' },
+  { id: '12', f: 'shot-12', lat: -37.8210583, lon: 144.9842417, bearing: 269, tilt: 9, mm: 24, t: '12:33:38' },
+  { id: '13', f: 'shot-13', lat: -37.8215444, lon: 144.9841444, bearing: 26, tilt: 13, mm: 24, t: '12:34:56' },
+  { id: '14', f: 'shot-14', lat: -37.8215667, lon: 144.9841194, bearing: 28, tilt: 15, mm: 20, t: '12:35:16' },
+  { id: '15', f: 'shot-15', lat: -37.8215250, lon: 144.9841528, bearing: 23, tilt: 16, mm: 20, t: '12:35:25' },
+  { id: '16', f: 'shot-16', lat: -37.8215750, lon: 144.9842111, bearing: 331, tilt: 11, mm: 24, t: '12:36:39' },
+  { id: '17', f: 'shot-17', lat: -37.8215694, lon: 144.9842361, bearing: 332, tilt: 12, mm: 24, t: '12:36:44' },
+  { id: '18', f: 'shot-18', lat: -37.8199083, lon: 144.9816583, bearing: 32, tilt: 5, mm: 24, t: '12:41:11' },
+  { id: '19', f: 'shot-19', lat: -37.8189944, lon: 144.9819889, bearing: 81, tilt: 12, mm: 24, t: '12:44:17' },
+  { id: '20', f: 'shot-20', lat: -37.8190556, lon: 144.9820750, bearing: 72, tilt: 9, mm: 24, t: '12:44:34' },
+];
+const FOV = { 24: { h: 57.6, v: 34.4 }, 20: { h: 67.0, v: 40.7 } }; // Cadrage burn-in, Alexa Mini 3.2K 1.78:1
+const SITE = { lat: -37.81998, lon: 144.98342 };
+const DEFAULT_DATE = '2026-09-02'; // shoot date
+const RAD = Math.PI / 180;
+const TZ = { timeZone: 'Australia/Melbourne', hour: 'numeric', minute: '2-digit' };
+const STORE = 'recce-c7-favourites';
+const STORE_NAME = 'recce-c7-username';
+const STORE_COMMENTS = 'recce-c7-comments';
+const initialsOf = name => (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+
+const PALETTES = [
+  { name: 'Paper & rust', panel: '#f7f4ef', ink: '#211d19', soft: '#6f6558', accent: '#c05621', deep: '#8c3c14',
+    line: 'rgba(33,29,25,.14)', hover: 'rgba(192,86,33,.10)', rose: 'rgba(192,86,33,.08)', field: '#231f1b',
+    sun: '#e08a3c', sunCore: '#fdf1e2', fav: '#c05621', favInk: '#f7f4ef', halo: 'rgba(224,138,60,.55)',
+    cone: '#c05621', track: 'linear-gradient(90deg,#e6ded4,#c05621)', tiles: 'saturate(.72) contrast(1.04) brightness(.97)' },
+  { name: 'Bone & navy', panel: '#f4f1ea', ink: '#16233a', soft: '#5d6b81', accent: '#1c3557', deep: '#12233c',
+    line: 'rgba(22,35,58,.14)', hover: 'rgba(28,53,87,.09)', rose: 'rgba(28,53,87,.07)', field: '#141d2c',
+    sun: '#e8b04b', sunCore: '#fff6e2', fav: '#1c3557', favInk: '#f4f1ea', halo: 'rgba(232,176,75,.55)',
+    cone: '#1c3557', track: 'linear-gradient(90deg,#dcd8cf,#1c3557)', tiles: 'saturate(.68) contrast(1.05) brightness(.95)' },
+  { name: 'Chalk & olive', panel: '#f3f3ee', ink: '#1f2119', soft: '#666b58', accent: '#5c6b3c', deep: '#3f4a28',
+    line: 'rgba(31,33,25,.14)', hover: 'rgba(92,107,60,.10)', rose: 'rgba(92,107,60,.08)', field: '#1d201a',
+    sun: '#d9c15a', sunCore: '#fbf8e4', fav: '#5c6b3c', favInk: '#f3f3ee', halo: 'rgba(217,193,90,.55)',
+    cone: '#5c6b3c', track: 'linear-gradient(90deg,#dedcd2,#5c6b3c)', tiles: 'saturate(.7) contrast(1.04) brightness(.96)' },
+  { name: 'Slate & sky', panel: '#eef1f4', ink: '#1a2430', soft: '#5c6b7a', accent: '#2f6f9f', deep: '#1f4d70',
+    line: 'rgba(26,36,48,.14)', hover: 'rgba(47,111,159,.10)', rose: 'rgba(47,111,159,.08)', field: '#182028',
+    sun: '#e6c15c', sunCore: '#fdf7e6', fav: '#2f6f9f', favInk: '#eef1f4', halo: 'rgba(230,193,92,.55)',
+    cone: '#2f6f9f', track: 'linear-gradient(90deg,#d5dbe1,#2f6f9f)', tiles: 'saturate(.66) contrast(1.06) brightness(.95)' },
+  { name: 'Cream & ink', panel: '#f6f2e8', ink: '#232323', soft: '#6b6759', accent: '#232323', deep: '#3d3b34',
+    line: 'rgba(35,35,35,.14)', hover: 'rgba(35,35,35,.08)', rose: 'rgba(35,35,35,.06)', field: '#222019',
+    sun: '#d9a13c', sunCore: '#fdf3df', fav: '#232323', favInk: '#f6f2e8', halo: 'rgba(217,161,60,.55)',
+    cone: '#232323', track: 'linear-gradient(90deg,#e2ddd0,#232323)', tiles: 'saturate(.6) contrast(1.05) brightness(.96)' },
+  { name: 'Warm grey & red', panel: '#f0eeeb', ink: '#1e1c1b', soft: '#6a6461', accent: '#b3222c', deep: '#851a22',
+    line: 'rgba(30,28,27,.14)', hover: 'rgba(179,34,44,.09)', rose: 'rgba(179,34,44,.07)', field: '#201d1c',
+    sun: '#e0913f', sunCore: '#fdf0e0', fav: '#b3222c', favInk: '#f0eeeb', halo: 'rgba(224,145,63,.55)',
+    cone: '#b3222c', track: 'linear-gradient(90deg,#ded9d4,#b3222c)', tiles: 'saturate(.7) contrast(1.04) brightness(.96)' },
+];
+
+const minutesOf = t => { const [h, m, s] = t.split(':').map(Number); return h * 60 + m + s / 60; };
+const loadFavs = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem(STORE));
+    if (Array.isArray(v)) return v.reduce((o, id) => ({ ...o, [id]: 3 }), {}); // migrate legacy boolean favourites
+    return v || {};
+  } catch (e) { return {}; }
+};
+const loadName = () => { try { return localStorage.getItem(STORE_NAME) || ''; } catch (e) { return ''; } };
+const loadComments = () => { try { return JSON.parse(localStorage.getItem(STORE_COMMENTS)) || {}; } catch (e) { return {}; } };
+
+class Component extends DCLogic {
+  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 5, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false };
+
+  startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
+  onTitleInput = e => this.setState({ titleDraft: e.target.value });
+  onTitleKey = e => { if (e.key === 'Enter') this.commitTitle(); if (e.key === 'Escape') this.setState({ editingTitle: false }); };
+  commitTitle = () => { const v = this.state.titleDraft.trim(); this.setState({ jobTitle: v || this.state.jobTitle, editingTitle: false }); };
+  titleInputRef = el => { if (el) el.focus(); };
+
+  startAddLocation = () => this.setState({ addingLocation: true, newLocationDraft: '' });
+  onNewLocationInput = e => this.setState({ newLocationDraft: e.target.value });
+  cancelAddLocation = () => this.setState({ addingLocation: false, newLocationDraft: '' });
+  onNewLocationKey = e => {
+    if (e.key === 'Enter') {
+      const name = this.state.newLocationDraft.trim();
+      if (!name) { this.cancelAddLocation(); return; }
+      const id = 'loc' + Date.now();
+      this.setState({ locations: [...this.state.locations, { id, name }], activeLoc: id, addingLocation: false, newLocationDraft: '' });
+    } else if (e.key === 'Escape') this.cancelAddLocation();
+  };
+  newLocationInputRef = el => { if (el) el.focus(); };
+  setActiveLoc = id => () => this.setState({ activeLoc: id });
+
+  startEditDate = () => this.setState({ editingDate: true });
+  onDateInput = e => { const v = e.target.value; if (!v) return; this.setState({ shootDate: v }, () => { this.drawSun(); this.paint(); this.frameSun(this.state.sel); }); };
+  stopEditDate = () => this.setState({ editingDate: false });
+  dateInputRef = el => { if (el) el.focus(); };
+
+  requestName(action) {
+    if (this.state.userName) { action(); return; }
+    this.setState({ showNamePrompt: true, pendingAction: action, nameDraft: '' });
+  }
+  confirmName() {
+    const name = this.state.nameDraft.trim();
+    if (!name) return;
+    try { localStorage.setItem(STORE_NAME, name); } catch (e) {}
+    const action = this.state.pendingAction;
+    this.setState({ userName: name, showNamePrompt: false, pendingAction: null }, () => { if (action) action(); });
+  }
+  cancelNamePrompt() { this.setState({ showNamePrompt: false, pendingAction: null }); }
+  addComment(text) {
+    const id = SHOTS[this.state.sel].id;
+    const comments = { ...this.state.comments };
+    const list = comments[id] ? [...comments[id]] : [];
+    list.push({ name: this.state.userName, initials: initialsOf(this.state.userName), text, ts: Date.now() });
+    comments[id] = list;
+    try { localStorage.setItem(STORE_COMMENTS, JSON.stringify(comments)); } catch (e) {}
+    this.setState({ comments, commentDraft: '' });
+  }
+  postComment() {
+    const text = this.state.commentDraft.trim();
+    if (!text) return;
+    this.requestName(() => this.addComment(text));
+  }
+
+  toggleStarFilter(n) {
+    const cur = this.state.starFilter;
+    const starFilter = cur.indexOf(n) >= 0 ? cur.filter(x => x !== n) : [...cur, n];
+    this.setState({ starFilter }, () => { const v = this.visible(); if (v.indexOf(this.state.sel) < 0 && v.length) this.select(v[0]); else this.paint(); });
+  }
+
+  toggleMapPanel = () => this.setState({ mapPanelOpen: !this.state.mapPanelOpen });
+  toggleCameraPanel = () => this.setState({ cameraPanelOpen: !this.state.cameraPanelOpen });
+  toggleSunPanel = () => this.setState({ sunPanelOpen: !this.state.sunPanelOpen });
+
+  onThumbDragStart = e => {
+    e.preventDefault(); e.stopPropagation();
+    const startY = e.clientY, startH = this.state.thumbH;
+    document.body.style.userSelect = 'none';
+    const move = ev => this.setState({ thumbH: Math.max(36, Math.min(140, startH + (ev.clientY - startY))) });
+    const up = () => { document.body.style.userSelect = ''; window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); window.removeEventListener('blur', up); };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    window.addEventListener('blur', up);
+  };
+
+  toggleSun = () => this.setState({ showSun: !this.state.showSun }, () => this.drawSun());
+
+  setConeMode = m => this.setState({ coneMode: m }, () => this.paint());
+
+  mapRefCb = el => { this.mapEl = el; if (el && this.state.ready && this.lib) this.initMap(); };
+
+  onDragStart = e => {
+    e.preventDefault(); e.stopPropagation();
+    const startX = e.clientX, startW = this.state.leftWidth;
+    document.body.style.userSelect = 'none';
+    const move = ev => {
+      const w = Math.max(360, Math.min(window.innerWidth - 420, startW + (ev.clientX - startX)));
+      this.setState({ leftWidth: w });
+      if (this.map) this.map.invalidateSize();
+    };
+    const up = () => { document.body.style.userSelect = ''; window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); window.removeEventListener('blur', up); };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    window.addEventListener('blur', up);
+  };
+
+  async componentDidMount() {
+    if (this.map && this.lib) return; // survive hot-reload of the logic class
+    window.addEventListener('keydown', this.onKeyDown);
+    this.lib = await import('./photo-sun.js');
+    for (let i = 0; i < 150 && !window.L; i++) await new Promise(r => setTimeout(r, 60));
+    this.applyPalette(this.state.pal);
+    this.setState({ ready: true }, () => this.initMap());
+  }
+
+  applyPalette(i) {
+    const p = PALETTES[i], r = document.documentElement.style;
+    r.setProperty('--ui-panel', p.panel); r.setProperty('--ui-ink', p.ink); r.setProperty('--ui-soft', p.soft);
+    r.setProperty('--ui-accent', p.accent); r.setProperty('--ui-deep', p.deep); r.setProperty('--ui-line', p.line);
+    r.setProperty('--ui-hover', p.hover); r.setProperty('--ui-rose', p.rose); r.setProperty('--ui-field', p.field);
+    r.setProperty('--ui-sun', p.sun); r.setProperty('--ui-sun-core', p.sunCore); r.setProperty('--ui-fav', p.fav);
+    r.setProperty('--ui-fav-ink', p.favInk); r.setProperty('--ui-halo', p.halo); r.setProperty('--ui-track', p.track);
+    r.setProperty('--ui-tiles', p.tiles); r.setProperty('--ui-pin', p.panel);
+    r.setProperty('--ui-pin-edge', p.accent); r.setProperty('--ui-pin-ink', p.deep);
+  }
+
+  pal() { return PALETTES[this.state.pal]; }
+  date(m) { const day0 = Date.parse(this.state.shootDate + 'T00:00:00+10:00'); return new Date(day0 + m * 60000); }
+  shot() { return SHOTS[this.state.sel]; }
+  fov(s) { return FOV[s.mm] || FOV[24]; }
+  rating(i) { return this.state.favs[SHOTS[i].id] || 0; }
+  isFav(i) { return this.rating(i) > 0; }
+  visible() { return this.state.starFilter.length ? this.state.order.filter(i => this.state.starFilter.indexOf(this.rating(i)) >= 0) : this.state.order; }
+  events() {
+    if (!this.lib) return null;
+    if (!this._ev) this._ev = this.lib.sunEvents(this.date(720), SITE.lat, SITE.lon);
+    return this._ev;
+  }
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.onKeyDown);
+    if (this._resizeObs) this._resizeObs.disconnect();
+  }
+
+  mins(d) { const day0 = Date.parse(this.state.shootDate + 'T00:00:00+10:00'); return d ? (d.getTime() - day0) / 60000 : null; }
+
+  initMap() {
+    const el = this.mapEl;
+    if (!el || !window.L || !this.lib || this.map) return;
+    const L = window.L;
+    if (el._leaflet_id) { el.innerHTML = ''; el._leaflet_id = undefined; }
+    el.style.background = '#fff';
+    const map = L.map(el, { zoomControl: false, zoomSnap: 0.25, dragging: true, tap: true }).setView([SITE.lat, SITE.lon], 17);
+    map.dragging.enable();
+    this.tileSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' });
+    this.tileTerrain = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19, attribution: 'Esri' });
+    this.tileLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19, pane: 'overlayPane' });
+    this.tileSat.addTo(map);
+    L.control.zoom({ position: 'bottomleft' }).addTo(map);
+    this.map = map;
+    this.coneLayer = L.layerGroup().addTo(map);
+    this.sunLayer = L.layerGroup().addTo(map);
+    this.pinLayer = L.layerGroup().addTo(map);
+
+    this.cones = SHOTS.map((s, i) => {
+      const poly = L.polygon(this.conePoints(s, this.state.coneLen), { color: this.pal().cone, weight: 1.5, opacity: .6, fillColor: this.pal().cone, fillOpacity: .16 }).addTo(this.coneLayer);
+      poly.on('click', () => this.select(i));
+      return poly;
+    });
+    const off = this.pinOffsets();
+    this.pins = SHOTS.map((s, i) => {
+      const [dx, dy] = off[i];
+      const m = L.marker([s.lat, s.lon], { zIndexOffset: 200,
+        icon: L.divIcon({ className: 'pin', html: `<div class="pin-dot">${s.id}</div>`, iconSize: [28, 28], iconAnchor: [14 - dx, 14 - dy] }) }).addTo(this.pinLayer);
+      m.on('click', () => this.select(i));
+      return m;
+    });
+
+    const b = L.latLngBounds(SHOTS.map(s => [s.lat, s.lon])).pad(0.35);
+    map.fitBounds(b, { animate: false, maxZoom: 17.5, paddingTopLeft: [16, 60], paddingBottomRight: [16, 150] });
+    if (map.getZoom() < 16.5) map.setZoom(16.5, { animate: false });
+    map.on('zoomend', () => { this.drawSun(); this.paint(); });
+    this._resizeObs = new ResizeObserver(() => map.invalidateSize());
+    this._resizeObs.observe(el);
+    this.drawSun();
+    this.paint();
+    this.frameSun(this.state.sel);
+    this.applyMapOpacity();
+  }
+
+  conePoints(s, len) {
+    const half = this.fov(s).h / 2, r = len || this.state.coneLen, pts = [[s.lat, s.lon]];
+    for (let a = -half; a <= half + .01; a += half / 6) pts.push(this.lib.destination(s.lat, s.lon, s.bearing + a, r));
+    return pts;
+  }
+
+  /** Fan pins that sit within ~12 m so every frame stays clickable. */
+  pinOffsets() {
+    const d = (a, b) => Math.hypot((a.lon - b.lon) * 111320 * Math.cos(a.lat * RAD), (a.lat - b.lat) * 111320);
+    const groups = [];
+    SHOTS.forEach((s, i) => {
+      const g = groups.find(g => g.some(j => d(s, SHOTS[j]) < 12));
+      if (g) g.push(i); else groups.push([i]);
+    });
+    const out = SHOTS.map(() => [0, 0]);
+    groups.forEach(g => {
+      if (g.length < 2) return;
+      const r = g.length > 3 ? 32 : 24;
+      g.forEach((idx, k) => { const a = (k / g.length) * 360 - 90; out[idx] = [Math.cos(a * RAD) * r, Math.sin(a * RAD) * r]; });
+    });
+    return out;
+  }
+
+  /** Sun Seeker style: hourly arrows showing the direction light travels, with time pills. */
+  drawSun() {
+    if (!this.map || !this.lib) return;
+    if (this.sunLayer) this.sunLayer.clearLayers();
+    if (!this.state.showSun) return;
+    const L = window.L, { destination, sunPos } = this.lib, p = this.pal();
+    const NOI = { interactive: false };
+    this.sunLayer.clearLayers();
+    const ev = this.events(), from = this.mins(ev.sunrise), to = this.mins(ev.sunset);
+    const s = this.shot();
+    const anchor = [s.lat, s.lon];
+    const size = this.map.getSize(), z = this.map.getZoom();
+    const base = Math.max(120, Math.min(230, Math.min(size.x, size.y) * 0.34));
+    const ringPt = (azimuth, px) => {
+      const p0 = this.map.project(anchor, z);
+      const a = (azimuth - 90) * RAD;
+      return this.map.unproject(p0.add([Math.cos(a) * px, Math.sin(a) * px]), z);
+    };
+    const R = base;
+
+    // faint guide arc through the day
+    const track = [];
+    for (let m = from; m <= to; m += 6) {
+      const q = sunPos(this.date(m), s.lat, s.lon);
+      if (q.elevation < 0) continue;
+      track.push({ m, ...q, pt: ringPt(q.azimuth, R * 0.82) });
+    }
+    if (!track.length) return;
+    L.polyline(track.map(t => t.pt), { color: p.sun, weight: 2, opacity: .5, dashArray: '4 7', ...NOI }).addTo(this.sunLayer);
+    L.circleMarker(anchor, { radius: 5, color: p.sun, weight: 3, fillColor: p.field, fillOpacity: 1, ...NOI }).addTo(this.sunLayer);
+
+    const SUNRISE_ICON = '<path d="M12 2v6"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/>';
+    const SUNSET_ICON = '<path d="M12 10V2"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/>';
+    const arrow = (pt, azimuth, text, kind, icon) => {
+      const heading = azimuth + 90; // points from the ring back toward the shot location
+      const strong = kind === 'edge';
+      const iconHtml = icon ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="' + p.sunCore + '" stroke-width="2.5" stroke-linecap="round" style="margin-right:4px;flex:none">' + icon + '</svg>' : '';
+      const html =
+        '<div style="position:relative;width:118px;height:46px;display:flex;align-items:center;justify-content:center">' +
+          '<div style="position:absolute;inset:0;transform:rotate(' + heading + 'deg)">' +
+            '<svg viewBox="0 0 118 46" width="118" height="46">' +
+              '<g transform="translate(59,23)">' +
+                '<line x1="-26" y1="0" x2="20" y2="0" stroke="' + p.sun + '" stroke-width="5" stroke-linecap="round"></line>' +
+                '<path d="M20 -9 L38 0 L20 9 Z" fill="' + p.sun + '" stroke="' + p.ink + '" stroke-width="2"></path>' +
+              '</g>' +
+            '</svg>' +
+          '</div>' +
+          '<span style="position:relative;display:flex;align-items:center;font:700 ' + (strong ? 11 : 12.5) + 'px var(--font-body);color:' + p.sunCore +
+            ';background:' + p.ink + ';padding:3px 9px;border-radius:999px;box-shadow:0 1px 6px rgba(0,0,0,.55);white-space:nowrap">' + iconHtml + text + '</span>' +
+        '</div>';
+      L.marker(pt, { interactive: false, zIndexOffset: 50,
+        icon: L.divIcon({ className: '', iconSize: [118, 46], iconAnchor: [59, 23], html }) }).addTo(this.sunLayer);
+    };
+
+    let k = 0;
+    for (let m = Math.ceil(from / 60) * 60; m <= to; m += 60, k++) {
+      const q = sunPos(this.date(m), s.lat, s.lon);
+      if (q.elevation < 1) continue;
+      arrow(ringPt(q.azimuth, R), q.azimuth,
+        this.date(m).toLocaleTimeString('en-AU', { timeZone: 'Australia/Melbourne', hour: 'numeric' }).replace(' ', '').toLowerCase(), 'hour');
+    }
+    arrow(ringPt(track[0].azimuth, R), track[0].azimuth, this.fmt(ev.sunrise), 'edge', SUNRISE_ICON);
+    arrow(ringPt(track[track.length - 1].azimuth, R), track[track.length - 1].azimuth, this.fmt(ev.sunset), 'edge', SUNSET_ICON);
+
+    this.sunNow = L.layerGroup().addTo(this.sunLayer);
+    this.paintNow();
+  }
+
+  /** The sun disc at the scrubbed time, with its ray onto the site. */
+  paintNow() {
+    if (!this.sunNow) return;
+    const L = window.L, { destination, sunPos } = this.lib, p = this.pal();
+    this.sunNow.clearLayers();
+    const s = this.shot();
+    const now = sunPos(this.date(this.state.minutes), s.lat, s.lon);
+    if (now.elevation < -1) return;
+    const map = this.map, z = map.getZoom(), size = map.getSize();
+    const px = Math.max(120, Math.min(230, Math.min(size.x, size.y) * 0.34)) * 0.6;
+    const a = (now.azimuth - 90) * RAD;
+    const at = map.unproject(map.project([s.lat, s.lon], z).add([Math.cos(a) * px, Math.sin(a) * px]), z);
+    L.polyline([at, [s.lat, s.lon]], { color: p.sun, weight: 3, opacity: .9, interactive: false }).addTo(this.sunNow);
+    const t = this.fmt(this.date(this.state.minutes));
+    L.marker(at, { interactive: false, zIndexOffset: 300,
+      icon: L.divIcon({ className: '', iconSize: [78, 78], iconAnchor: [39, 39],
+        html: '<div style="width:78px;height:78px;border-radius:999px;display:grid;place-items:center;' +
+              'background:radial-gradient(circle,' + p.sun + ' 0 46%,transparent 62%);">' +
+              '<span style="font:700 13px var(--font-body);color:' + p.ink + '">' + t + '</span></div>' }) }).addTo(this.sunNow);
+  }
+
+  paint() {
+    if (!this.map || !this.lib) return;
+    const sel = this.state.sel, vis = this.visible();
+    this.cones.forEach((poly, i) => {
+      const on = i === sel, mode = this.state.coneMode;
+      const shown = mode !== 'off' && vis.indexOf(i) >= 0 && (mode === 'all' || on);
+      poly.setLatLngs(this.conePoints(SHOTS[i], on ? this.state.coneLen * 1.7 : undefined));
+      poly.setStyle({ color: this.pal().cone, fillColor: this.pal().cone,
+        opacity: shown ? (on ? 1 : .5) : 0, fillOpacity: shown ? (on ? .34 : .12) : 0 });
+      if (on) poly.bringToFront();
+    });
+    this.pins.forEach((m, i) => {
+      const node = m.getElement();
+      if (!node) return;
+      node.classList.toggle('is-sel', i === sel);
+      node.classList.toggle('is-fav', this.isFav(i));
+      node.classList.toggle('is-hidden', vis.indexOf(i) < 0);
+    });
+    this.paintNow();
+  }
+
+  startResize(e) {
+    e.preventDefault();
+    const startX = e.clientX, startW = this.state.leftWidth || 440;
+    const onMove = ev => {
+      const w = Math.min(760, Math.max(340, startW + (ev.clientX - startX)));
+      this.setState({ leftWidth: w });
+      if (this.map) this.map.invalidateSize();
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (this.map) this.map.invalidateSize();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+
+  select(i) {
+    this.setState({ sel: i, minutes: minutesOf(SHOTS[i].t) }, () => {
+      this.drawSun();
+      this.paint();
+      this.frameSun(i);
+      this.scrollThumbIntoView(i);
+    });
+  }
+
+  scrollThumbIntoView(i) {
+    const strip = this.thumbStripEl, node = this.thumbNodes && this.thumbNodes[i];
+    if (!strip || !node) return;
+    const left = node.offsetLeft, right = left + node.offsetWidth;
+    if (left < strip.scrollLeft) strip.scrollTo({ left: left - 12, behavior: 'smooth' });
+    else if (right > strip.scrollLeft + strip.clientWidth) strip.scrollTo({ left: right - strip.clientWidth + 12, behavior: 'smooth' });
+  }
+
+  reorder(fromI, toI) {
+    if (fromI === toI) return;
+    const order = this.state.order.slice();
+    const fromIdx = order.indexOf(fromI), toIdxOrig = order.indexOf(toI);
+    order.splice(fromIdx, 1);
+    let insertAt = order.indexOf(toI);
+    if (toIdxOrig > fromIdx) insertAt += 1; // moving forward: land after the target, not before it
+    order.splice(insertAt, 0, fromI);
+    this.setState({ order });
+  }
+
+  /** Pan the minimum amount needed to bring the selected pin's sun-path ring fully into view,
+      reserving the top control strip's footprint, instead of recentring on the pin — keeps as
+      many of the other pins in frame as possible. */
+  frameSun(i) {
+    const map = this.map;
+    if (!map) return;
+    const z = map.getZoom(), size = map.getSize();
+    const base = Math.max(120, Math.min(230, Math.min(size.x, size.y) * 0.34));
+    const pad = base + 170; // ring radius + hour-pill/edge-label allowance
+    const topReserve = 16; // top margin only, control strip now lives at the bottom
+    const bottomReserve = 150; // control-strip height + margin
+    const s = SHOTS[i];
+    const c = map.project([s.lat, s.lon], z);
+    const ringMin = c.subtract([pad, pad]), ringMax = c.add([pad, pad]);
+    const vpMin = map.project(map.containerPointToLatLng([0, topReserve]), z);
+    const vpMax = map.project(map.containerPointToLatLng([size.x, size.y - bottomReserve]), z);
+    let dx = 0, dy = 0;
+    if (ringMin.x < vpMin.x) dx = ringMin.x - vpMin.x; else if (ringMax.x > vpMax.x) dx = ringMax.x - vpMax.x;
+    if (ringMin.y < vpMin.y) dy = ringMin.y - vpMin.y; else if (ringMax.y > vpMax.y) dy = ringMax.y - vpMax.y;
+    if (dx || dy) map.panBy([dx, dy], { animate: true, duration: .5 });
+  }
+
+  step(dir) {
+    const vis = this.visible();
+    if (!vis.length) return;
+    const at = vis.indexOf(this.state.sel);
+    this.select(vis[((at < 0 ? 0 : at) + dir + vis.length) % vis.length]);
+  }
+
+  onKeyDown = e => {
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); this.step(-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); this.step(1); }
+  };
+
+  setMapMode = mode => {
+    if (!this.map) return;
+    this.setState({ mapMode: mode }, () => {
+      (mode === 'sat' ? this.tileTerrain : this.tileSat).remove();
+      (mode === 'sat' ? this.tileSat : this.tileTerrain).addTo(this.map);
+      this.tileSat.bringToBack(); this.tileTerrain.bringToBack();
+      if (this.state.showLabels) this.tileLabels.bringToFront();
+      this.applyMapOpacity();
+    });
+  };
+
+  toggleLabels = () => this.setState({ showLabels: !this.state.showLabels }, () => {
+    if (!this.map) return;
+    if (this.state.showLabels) this.tileLabels.addTo(this.map).bringToFront();
+    else this.tileLabels.remove();
+  });
+
+  applyMapOpacity() {
+    const op = this.state.mapOpacity;
+    [this.tileSat, this.tileTerrain].forEach(t => { if (t) t.setOpacity(op); });
+  }
+
+  setMapOpacity = v => this.setState({ mapOpacity: v }, () => this.applyMapOpacity());
+
+  setRating(i, n) {
+    const id = SHOTS[i].id, cur = this.rating(i);
+    const favs = { ...this.state.favs };
+    if (cur === n) delete favs[id]; else favs[id] = n;
+    try { localStorage.setItem(STORE, JSON.stringify(favs)); } catch (e) {}
+    this.setState({ favs }, () => this.paint());
+  }
+
+  starIcons(rating, size) {
+    const p = this.pal(), e = React.createElement;
+    return [1, 2, 3].map(n => e('svg', { key: n, viewBox: '0 0 24 24', width: size, height: size,
+      fill: n <= rating ? p.fav : 'rgba(255,255,255,.85)', stroke: n <= rating ? p.fav : 'rgba(0,0,0,.4)', strokeWidth: 1.5, strokeLinejoin: 'round' },
+      e('path', { d: 'M12 3.5l2.7 5.6 6.1.8-4.4 4.3 1.1 6.1L12 17.4l-5.5 2.9 1.1-6.1L3.2 9.9l6.1-.8z' })));
+  }
+
+  fmt(d) { return d ? d.toLocaleTimeString('en-AU', TZ).replace(' ', '').toLowerCase() : '—'; }
+
+  /** The day's sun path projected into the selected frame through its lens. */
+  overlay() {
+    if (!this.lib) return null;
+    const { sunPos, angleDelta } = this.lib, s = this.shot(), fov = this.fov(s), p = this.pal();
+    const FW = 1000, FH = 690, pw = 840, ph = pw / (4032 / 2610);
+    const px0 = (FW - pw) / 2, py0 = (FH - ph) / 2, cx = FW / 2, cy = FH / 2;
+    const kx = pw / (2 * Math.tan(fov.h / 2 * RAD)), ky = ph / (2 * Math.tan(fov.v / 2 * RAD));
+    const project = (az, el) => {
+      const d = angleDelta(s.bearing, az);
+      if (Math.abs(d) > 88) return null;
+      return [cx + Math.tan(d * RAD) * kx, cy - Math.tan((el - s.tilt) * RAD) * ky];
+    };
+    const ok = q => q && q[0] > -240 && q[0] < FW + 240 && q[1] > -190 && q[1] < FH + 190;
+    const ev = this.events(), from = this.mins(ev.sunrise), to = this.mins(ev.sunset);
+    const segs = []; let run = [];
+    for (let m = from; m <= to; m += 4) {
+      const q = project(...(v => [v.azimuth, v.elevation])(sunPos(this.date(m), SITE.lat, SITE.lon)));
+      if (ok(q)) run.push(q); else if (run.length) { segs.push(run); run = []; }
+    }
+    if (run.length) segs.push(run);
+    const hours = [];
+    for (let m = Math.ceil(from / 60) * 60; m <= to; m += 60) {
+      const v = sunPos(this.date(m), SITE.lat, SITE.lon), q = project(v.azimuth, v.elevation);
+      if (ok(q)) hours.push({ q, m });
+    }
+    const nv = sunPos(this.date(this.state.minutes), SITE.lat, SITE.lon), nq = project(nv.azimuth, nv.elevation);
+    const horizon = cy + Math.tan(s.tilt * RAD) * ky;
+    const e = React.createElement;
+    return e('svg', { viewBox: `0 0 ${FW} ${FH}`, width: '100%', height: '100%', style: { display: 'block' } }, [
+      e('line', { key: 'h', x1: 0, x2: FW, y1: horizon, y2: horizon, stroke: p.sunCore, strokeOpacity: .3, strokeWidth: 1.5, strokeDasharray: '10 8' }),
+      ...segs.map((r, i) => e('polyline', { key: 'p' + i, points: r.map(q => q.join(',')).join(' '), fill: 'none', stroke: p.sun, strokeWidth: 3.5, strokeLinecap: 'round', strokeDasharray: '8 6' })),
+      ...hours.map(h => e('g', { key: 'h' + h.m }, [
+        e('circle', { key: 'c', cx: h.q[0], cy: h.q[1], r: 4.5, fill: p.sunCore }),
+        e('text', { key: 't', x: h.q[0], y: h.q[1] - 13, textAnchor: 'middle', style: { font: '700 17px var(--font-body)', fill: p.sunCore } },
+          this.date(h.m).toLocaleTimeString('en-AU', { timeZone: 'Australia/Melbourne', hour: 'numeric' }).replace(' ', '').toLowerCase()),
+      ])),
+      nq && e('g', { key: 'n' }, [
+        e('circle', { key: 'g', cx: nq[0], cy: nq[1], r: 28, fill: p.sun, opacity: .3 }),
+        e('circle', { key: 'd', cx: nq[0], cy: nq[1], r: 12, fill: p.sunCore, stroke: p.sun, strokeWidth: 4 }),
+      ]),
+    ]);
+  }
+
+  renderVals() {
+    const s = this.shot(), lib = this.lib, ev = this.events(), p = this.pal();
+    const fav = this.isFav(this.state.sel);
+    const th = this.state.thumbH, tw = Math.round(th * 1.45);
+    const thumbs = this.visible().map(i => {
+      const on = i === this.state.sel, rt = this.rating(i);
+      return {
+        key: i, id: SHOTS[i].id, onClick: () => this.select(i),
+        imgRef: el => { if (el) el.src = `photos/${SHOTS[i].f}.jpg`; },
+        nodeRef: el => { if (!this.thumbNodes) this.thumbNodes = {}; if (el) this.thumbNodes[i] = el; },
+        onDragStart: e => { e.dataTransfer.effectAllowed = 'move'; this.dragI = i; },
+        onDragOver: e => e.preventDefault(),
+        onDrop: e => { e.preventDefault(); if (this.dragI != null) this.reorder(this.dragI, i); this.dragI = null; },
+        style: `width:${tw}px; height:${th}px; object-fit:cover; border-radius:8px; display:block; cursor:grab; ` +
+          `border:2.5px solid ${on ? p.ink : (rt > 0 ? p.accent : 'transparent')}; ` +
+          `box-shadow:${on ? '0 0 0 2px ' + p.halo : 'none'}; opacity:${on ? 1 : .82}; transition:opacity .15s`,
+        hasStars: rt > 0, starIcons: this.starIcons(rt, 13),
+        hasComment: !!(this.state.comments[SHOTS[i].id] || []).length,
+      };
+    });
+    const now = lib ? lib.sunPos(this.date(this.state.minutes), s.lat, s.lon) : null;
+    const rel = lib && now ? lib.angleDelta(s.bearing, now.azimuth) : 0;
+    const side = Math.abs(rel) > 90 ? 'behind camera' : (rel < 0 ? `${Math.round(-rel)}° frame left` : `${Math.round(rel)}° frame right`);
+    const chipOn = `background:${p.accent}; color:${p.panel}`;
+    const chipOff = `background:${p.hover}; color:${p.ink}`;
+    const setPal = i => () => { this.applyPalette(i); this.setState({ pal: i }, () => { this.drawSun(); this.paint(); }); };
+    const activeIsMcg = this.state.activeLoc === 'mcg';
+    const activeLocName = (this.state.locations.find(l => l.id === this.state.activeLoc) || {}).name || 'Location';
+    const locationChips = this.state.locations.map(l => ({ name: l.name, onClick: this.setActiveLoc(l.id), style: l.id === this.state.activeLoc ? chipOn : chipOff }));
+    const [sdY, sdM, sdD] = this.state.shootDate.split('-');
+    const shootDateLabel = `${sdD}.${sdM}.${sdY.slice(2)}`;
+    return {
+      jobTitle: this.state.jobTitle, editingTitle: this.state.editingTitle, titleDraft: this.state.titleDraft,
+      startEditTitle: this.startEditTitle, onTitleInput: this.onTitleInput, onTitleKey: this.onTitleKey, commitTitle: this.commitTitle, titleInputRef: this.titleInputRef,
+      activeIsMcg, activeLocName, locationChips,
+      addingLocation: this.state.addingLocation, newLocationDraft: this.state.newLocationDraft,
+      startAddLocation: this.startAddLocation, onNewLocationInput: this.onNewLocationInput, onNewLocationKey: this.onNewLocationKey, cancelAddLocation: this.cancelAddLocation, newLocationInputRef: this.newLocationInputRef,
+      shootDate: this.state.shootDate, shootDateLabel, editingDate: this.state.editingDate,
+      startEditDate: this.startEditDate, onDateInput: this.onDateInput, stopEditDate: this.stopEditDate, dateInputRef: this.dateInputRef,
+      mapRef: this.mapRefCb,
+      thumbs, leftWidth: this.state.leftWidth, onDragStart: this.onDragStart,
+      thumbStripRef: el => { this.thumbStripEl = el; },
+      onThumbDragStart: this.onThumbDragStart,
+      mapMode: this.state.mapMode,
+      setMapModeSat: () => this.setMapMode('sat'), setMapModeTerrain: () => this.setMapMode('terrain'),
+      satStyle: this.state.mapMode === 'sat' ? chipOn : chipOff,
+      terrainStyle: this.state.mapMode === 'terrain' ? chipOn : chipOff,
+      showLabels: this.state.showLabels, toggleLabels: this.toggleLabels,
+      labelsStyle: this.state.showLabels ? chipOn : chipOff,
+      satStyleSm: (this.state.mapMode === 'sat' ? chipOn : chipOff) + ';padding:5px 10px; font-size:12px;',
+      terrainStyleSm: (this.state.mapMode === 'terrain' ? chipOn : chipOff) + ';padding:5px 10px; font-size:12px;',
+      labelsStyleSm: (this.state.showLabels ? chipOn : chipOff) + ';padding:5px 10px; font-size:12px;',
+      sunToggleStyleSm: (this.state.showSun ? chipOn : chipOff) + ';padding:4px 9px; font-size:11px;',
+      ghostStyleSm: (Math.abs(this.state.minutes - minutesOf(s.t)) < 0.5 ? chipOn : `background:${p.rose}; color:${p.deep}`) + ';padding:4px 9px; font-size:11px;',
+      coneOffStyle: (this.state.coneMode === 'off' ? chipOn : chipOff) + ';padding:4px 9px; font-size:11px;',
+      coneCurStyle: (this.state.coneMode === 'current' ? chipOn : chipOff) + ';padding:4px 9px; font-size:11px;',
+      coneAllStyle: (this.state.coneMode === 'all' ? chipOn : chipOff) + ';padding:4px 9px; font-size:11px;',
+      setConeOff: () => this.setConeMode('off'), setConeCurrent: () => this.setConeMode('current'), setConeAll: () => this.setConeMode('all'),
+
+      mapOpacity: this.state.mapOpacity,
+      mapOpacityPct: Math.round(this.state.mapOpacity * 100) + '%',
+      onOpacityChange: e => this.setMapOpacity(parseFloat(e.target.value)),
+      showSun: this.state.showSun, toggleSun: this.toggleSun,
+      sunToggleStyle: this.state.showSun ? chipOn : chipOff,
+      sunToggleLabel: this.state.showSun ? 'Sun path on' : 'Sun path off',
+      photoRef: el => { if (el) el.src = `photos/${s.f}.jpg`; },
+      frameOverlay: this.overlay(),
+      label: s.id, bearing: s.bearing, tilt: `${s.tilt}°`, lens: `${s.mm}mm`,
+      facing: lib ? `${lib.compass(s.bearing)} ${s.bearing}°` : `${s.bearing}°`,
+      clock: this.date(minutesOf(s.t)).toLocaleTimeString('en-AU', { ...TZ, second: '2-digit' }).replace(' ', '').toLowerCase(),
+      sunLine: now ? `Sun ${lib.compass(now.azimuth)} ${Math.round(now.azimuth)}° · ${Math.round(now.elevation)}° up · ${side}` : '',
+      scrubClock: this.fmt(this.date(this.state.minutes)),
+      minutes: Math.round(this.state.minutes),
+      dayMin: ev ? Math.round(this.mins(ev.sunrise)) : 400,
+      dayMax: ev ? Math.round(this.mins(ev.sunset)) : 1080,
+      sunriseClock: this.fmt(ev && ev.sunrise), noonClock: this.fmt(ev && ev.noon), sunsetClock: this.fmt(ev && ev.sunset),
+      sunScrubLine: now ? `sun ${Math.round(now.elevation)}° up, ${lib.compass(now.azimuth)}` : '',
+      onScrub: e => this.setState({ minutes: Number(e.target.value) }, () => this.paintNow()),
+      resetTime: () => this.setState({ minutes: minutesOf(s.t) }, () => this.paintNow()),
+      prev: () => this.step(-1), next: () => this.step(1),
+      ratingStars: [1, 2, 3].map(n => ({ n, onClick: () => this.requestName(() => this.setRating(this.state.sel, n)),
+        fill: n <= this.rating(this.state.sel) ? p.fav : 'none', stroke: n <= this.rating(this.state.sel) ? p.fav : p.accent })),
+      userInitials: initialsOf(this.state.userName),
+      userName: this.state.userName,
+      showNamePrompt: this.state.showNamePrompt,
+      nameDraft: this.state.nameDraft,
+      onNameInput: e => this.setState({ nameDraft: e.target.value }),
+      onNameKeyDown: e => { if (e.key === 'Enter') this.confirmName(); },
+      confirmName: () => this.confirmName(),
+      cancelNamePrompt: () => this.cancelNamePrompt(),
+      shotComments: (this.state.comments[s.id] || []).map((c, ci) => ({ ...c, key: ci,
+        timeLabel: new Date(c.ts).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' }) })),
+      hasComments: !!(this.state.comments[s.id] || []).length,
+      commentDraft: this.state.commentDraft,
+      onCommentInput: e => this.setState({ commentDraft: e.target.value }),
+      postComment: () => this.postComment(),
+      showAll: () => this.setState({ starFilter: [] }, () => this.paint()),
+      allStyle: this.state.starFilter.length ? chipOff : chipOn,
+      starFilterChips: [1, 2, 3].map(n => {
+        const active = this.state.starFilter.indexOf(n) >= 0;
+        return {
+          n, onClick: () => this.toggleStarFilter(n),
+          fill: active ? p.fav : 'none', stroke: active ? p.fav : p.soft,
+        };
+      }),
+      starFilterCount: this.state.starFilter.length ? this.visible().length : 20,
+      ghostStyle: chipOff,
+      p0: setPal(0), p1: setPal(1), p2: setPal(2), p3: setPal(3), p4: setPal(4), p5: setPal(5),
+      p0on: this.state.pal === 0 ? 'on' : '', p1on: this.state.pal === 1 ? 'on' : '',
+      p2on: this.state.pal === 2 ? 'on' : '', p3on: this.state.pal === 3 ? 'on' : '',
+      p4on: this.state.pal === 4 ? 'on' : '', p5on: this.state.pal === 5 ? 'on' : '',
+    };
+  }
+}
+
+</script>
+</body>
+</html> 
