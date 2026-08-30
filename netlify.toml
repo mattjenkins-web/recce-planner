@@ -26,3 +26,8 @@
   from = "/api/photo"
   to = "/.netlify/functions/photo"
   status = 200
+
+[[redirects]]
+  from = "/api/board"
+  to = "/.netlify/functions/board"
+  status = 200

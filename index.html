@@ -357,6 +357,25 @@ const STORE = 'recce-c7-favourites';
 const STORE_NAME = 'recce-c7-username';
 const STORE_COMMENTS = 'recce-c7-comments';
 const STORE_HIDDEN = 'recce-c7-hidden';
+// Ratings/comments/hidden-flags are shared server-side per "board" (see
+// /api/board) so they survive real page reloads and are visible to the
+// whole team, not just whoever's browser made the change. This page is
+// currently the one hardcoded demo map, hence a fixed id; once the map
+// loads per real job/location, this becomes `${jobId}:${locationId}`.
+const BOARD_ID = 'mcg-demo';
+async function syncBoard(partial) {
+  try {
+    await fetch('/api/board', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: BOARD_ID, ...partial }),
+    });
+  } catch (e) {
+    // Offline or the API's unreachable — localStorage (written alongside
+    // every call site below) still keeps this browser's own copy working.
+    console.warn('syncBoard: could not reach the server, this device’s local copy still has it', e);
+  }
+}
 const initialsOf = name => (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 
 const PALETTES = [
@@ -445,6 +464,7 @@ class Component extends DCLogic {
     list.push({ name: this.state.userName, initials: initialsOf(this.state.userName), text, ts: Date.now() });
     comments[id] = list;
     try { localStorage.setItem(STORE_COMMENTS, JSON.stringify(comments)); } catch (e) {}
+    syncBoard({ comments });
     this.setState({ comments, commentDraft: '' });
   }
   startEditComment(shotId, idx, text) { this.setState({ editingComment: shotId + ':' + idx, editCommentDraft: text }); }
@@ -457,6 +477,7 @@ class Component extends DCLogic {
     if (list[idx]) list[idx] = { ...list[idx], text, editedTs: Date.now() };
     comments[shotId] = list;
     try { localStorage.setItem(STORE_COMMENTS, JSON.stringify(comments)); } catch (e) {}
+    syncBoard({ comments });
     this.setState({ comments, editingComment: null, editCommentDraft: '' });
   }
   deleteComment(shotId, idx) {
@@ -465,6 +486,7 @@ class Component extends DCLogic {
     list.splice(idx, 1);
     comments[shotId] = list;
     try { localStorage.setItem(STORE_COMMENTS, JSON.stringify(comments)); } catch (e) {}
+    syncBoard({ comments });
     this.setState({ comments });
   }
   postComment() {
@@ -518,6 +540,21 @@ class Component extends DCLogic {
   async componentDidMount() {
     if (this.map && this.lib) return; // survive hot-reload of the logic class
     window.addEventListener('keydown', this.onKeyDown);
+    // Prefer the server's shared copy of ratings/comments/hidden-flags over
+    // whatever's in this browser's own localStorage — that's what actually
+    // fixes the "changes don't survive a reload" problem (see BOARD_ID
+    // above), and means everyone sees the same picks, not just this device.
+    fetch(`/api/board?id=${BOARD_ID}`).then(r => r.ok ? r.json() : null).then(data => {
+      if (!data) return;
+      this.setState({ favs: data.favs || {}, hidden: data.hidden || {}, comments: data.comments || {} }, () => {
+        try {
+          localStorage.setItem(STORE, JSON.stringify(this.state.favs));
+          localStorage.setItem(STORE_HIDDEN, JSON.stringify(this.state.hidden));
+          localStorage.setItem(STORE_COMMENTS, JSON.stringify(this.state.comments));
+        } catch (e) {}
+        this.paint();
+      });
+    }).catch(e => console.warn('Could not reach the server for saved ratings/comments — showing this device’s local copy instead', e));
     this.lib = await import('./photo-sun.js');
     for (let i = 0; i < 150 && !window.L; i++) await new Promise(r => setTimeout(r, 60));
     this.applyPalette(this.state.pal);
@@ -560,6 +597,7 @@ class Component extends DCLogic {
     const hidden = { ...this.state.hidden };
     if (hidden[id]) delete hidden[id]; else hidden[id] = true;
     try { localStorage.setItem(STORE_HIDDEN, JSON.stringify(hidden)); } catch (e) {}
+    syncBoard({ hidden });
     const showHidden = this.state.showHidden && Object.keys(hidden).length ? this.state.showHidden : false;
     const prevOrder = this.state.order;
     this.setState({ hidden, showHidden }, () => {
@@ -932,6 +970,7 @@ class Component extends DCLogic {
     const favs = { ...this.state.favs };
     if (cur === n) delete favs[id]; else favs[id] = n;
     try { localStorage.setItem(STORE, JSON.stringify(favs)); } catch (e) {}
+    syncBoard({ favs });
     this.setState({ favs }, () => this.paint());
   }
 
