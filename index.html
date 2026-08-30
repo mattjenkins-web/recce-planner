@@ -49,6 +49,10 @@
 
   <div style="width: {{ leftWidth }}px; flex: none; height: 100%; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; padding: 20px">
     <div style="background: var(--ui-panel); border-radius: var(--radius-lg); padding: 16px 20px 18px; box-shadow: var(--shadow-lg); flex: none">
+      <a href="projects.html" style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--ui-soft); margin-bottom: 8px">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+        All projects
+      </a>
       <div style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ui-deep); font-weight: 700">Recce · {{ activeLocName }}</div>
 
       <sc-if value="{{ editingTitle }}" hint-placeholder-val="{{ false }}">
@@ -159,16 +163,23 @@
             </sc-if>
             <button onClick="{{ t.onHide }}" title="{{ t.hideLabel }}" aria-label="{{ t.hideLabel }}" style="position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 999px; background: rgba(20,20,20,.6); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0" style-hover="background: rgba(20,20,20,.85)">
               <sc-if value="{{ t.hiddenFlag }}" hint-placeholder-val="{{ false }}">
-                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6.5 0-10-7-10-7a18.4 18.4 0 0 1 4.06-5.06M9.9 4.24A10.94 10.94 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
               </sc-if>
               <sc-if value="{{ !t.hiddenFlag }}" hint-placeholder-val="{{ true }}">
-                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6.5 0-10-7-10-7a18.4 18.4 0 0 1 4.06-5.06M9.9 4.24A10.94 10.94 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               </sc-if>
             </button>
           </div>
           <div style="font-size: 10px; color: var(--ui-soft); margin-top: 3px">Frame {{ t.id }}</div>
         </div>
       </sc-for>
+      <div style="flex: none; display: flex; align-items: center">
+        <input ref="{{ uploadInputRef }}" type="file" accept="image/*" multiple="{{ true }}" onChange="{{ onUploadFiles }}" style="display: none">
+        <button onClick="{{ openUploader }}" title="Add more photos to this location" aria-label="Add more photos to this location" style="box-sizing: border-box; width: {{ tw }}px; height: {{ th }}px; margin: 0; padding: 0; border-radius: 8px; border: 2px dashed var(--ui-line); background: var(--ui-hover); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--ui-soft); font-family: var(--font-body); line-height: 1; overflow: hidden">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--ui-deep)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span style="font-size: 10px; font-weight: 600; flex: none">Add photos</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -249,6 +260,27 @@
       </div>
     </div>
   </div>
+
+  <sc-if value="{{ showUploader }}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 2000; display: flex; align-items: center; justify-content: center">
+      <div style="background: var(--ui-panel); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 22px 24px; width: 380px; box-sizing: border-box">
+        <div style="font-family: var(--font-heading); font-size: 17px; color: var(--ui-ink); margin-bottom: 6px">{{ pendingCount }} photo(s) queued</div>
+        <div style="font-size: 12px; color: var(--ui-soft); margin-bottom: 14px">These will appear as frames once geotagged and placed on the map.</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 260px; overflow-y: auto">
+          <sc-for list="{{ pendingUploads }}" as="u" hint-placeholder-count="2">
+            <div style="position: relative; width: 72px; height: 72px">
+              <img src="{{ u.url }}" alt="{{ u.name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px">
+              <button onClick="{{ u.onRemove }}" aria-label="Remove" style="position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 999px; background: var(--ui-ink); color: var(--ui-panel); border: none; cursor: pointer; font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center">×</button>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px">
+          <button class="chip" onClick="{{ openUploader }}" style="background: var(--ui-hover); color: var(--ui-ink)">Add more</button>
+          <button class="chip" onClick="{{ closeUploader }}" style="background: var(--ui-accent); color: var(--ui-panel)">Done</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
 
   <sc-if value="{{ showNamePrompt }}" hint-placeholder-val="{{ false }}">
     <div style="position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 2000; display: flex; align-items: center; justify-content: center">
@@ -340,7 +372,7 @@ const loadComments = () => { try { return JSON.parse(localStorage.getItem(STORE_
 const loadHidden = () => { try { return JSON.parse(localStorage.getItem(STORE_HIDDEN)) || {}; } catch (e) { return {}; } };
 
 class Component extends DCLogic {
-  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false };
+  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false };
 
   startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
   onTitleInput = e => this.setState({ titleDraft: e.target.value });
@@ -492,6 +524,18 @@ class Component extends DCLogic {
     if (v.length) this.select(v[0]);
     this.paint();
   });
+
+  openUploader = () => { if (this.uploadInputEl) this.uploadInputEl.click(); };
+  uploadInputRef = el => { this.uploadInputEl = el; };
+  onUploadFiles = e => {
+    const items = Array.from(e.target.files).filter(f => f.type.indexOf('image/') === 0)
+      .map((f, k) => ({ id: 'up' + Date.now() + '-' + k, name: f.name, url: URL.createObjectURL(f) }));
+    e.target.value = '';
+    if (!items.length) return;
+    this.setState({ pendingUploads: [...this.state.pendingUploads, ...items], showUploader: true });
+  };
+  removePendingUpload = id => () => this.setState({ pendingUploads: this.state.pendingUploads.filter(u => u.id !== id) });
+  closeUploader = () => this.setState({ showUploader: false });
   events() {
     if (!this.lib) return null;
     if (!this._ev) this._ev = this.lib.sunEvents(this.date(720), SITE.lat, SITE.lon);
@@ -980,6 +1024,11 @@ class Component extends DCLogic {
       hasHidden: Object.keys(this.state.hidden).length > 0 || this.state.showHidden,
       hiddenStyle: this.state.showHidden ? chipOn : chipOff,
       toggleShowHidden: this.toggleShowHidden,
+      tw, th,
+      uploadInputRef: this.uploadInputRef, openUploader: this.openUploader, onUploadFiles: this.onUploadFiles,
+      showUploader: this.state.showUploader, closeUploader: this.closeUploader,
+      pendingCount: this.state.pendingUploads.length,
+      pendingUploads: this.state.pendingUploads.map(u => ({ ...u, onRemove: this.removePendingUpload(u.id) })),
       starFilterChips: [1, 2, 3].map(n => {
         const active = this.state.starFilter.indexOf(n) >= 0;
         return {

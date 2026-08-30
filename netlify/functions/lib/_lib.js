@@ -4,10 +4,11 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 // One blob store holds everything: job/location indexes as small JSON
 // documents, plus the raw photo bytes. Keys are namespaced by path so it
 // reads like a filesystem even though it's flat key/value storage.
-// `consistency: 'strong'` avoids reading a stale copy immediately after a
-// write (important since we do read-modify-write on the index JSON files).
+// (Strong consistency needs an 'uncachedEdgeURL' that isn't available via
+// connectLambda's classic-function context, so we use the default —
+// eventual consistency is fine for this app's read-modify-write volume.)
 function store() {
-  return getStore({ name: 'recce', consistency: 'strong' });
+  return getStore({ name: 'recce' });
 }
 
 const json = (status, body) => ({
