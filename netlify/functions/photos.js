@@ -1,16 +1,23 @@
 // GET  /api/photos?jobId=&locationId=                    -> list photo metadata for a location
-// POST /api/photos {jobId, locationId, filename,
-//                   contentType, dataBase64, bearing?,
-//                   tilt?, lens?, notes?}                 -> upload a photo
+// POST /api/photos {jobId, locationId, filename, contentType,
+//                   dataBase64, lat?, lon?, bearing?, tilt?,
+//                   lens?, notes?, capturedAt?, cameraMake?,
+//                   cameraModel?}                          -> upload a photo
 //
 // GPS lat/lon (and, on some phones, compass heading) are pulled from the
 // photo's own EXIF data when present. Bearing/tilt/lens are frequently
 // missing from EXIF entirely (most cameras never record them), so manual
-// values passed in the request always win over anything auto-detected.
+// values passed in the request always win over anything auto-detected here.
+// The upload UI also reads EXIF client-side (before it may downscale a large
+// photo for upload, which strips EXIF) and sends lat/lon/capturedAt/camera
+// fields explicitly for exactly that reason — those take priority too.
 const exifr = require('exifr');
 const { store, connectLambda, json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } = require('./lib/_lib');
 
-const MAX_BYTES = 8 * 1024 * 1024; // 8MB raw image ceiling (well under the ~6MB base64 request limit once accounted for, see README note)
+// Netlify's classic functions cap the request body around 6MB; base64
+// inflates raw bytes by ~37%, so this stays safely under that regardless of
+// JSON overhead. The upload UI downscales anything larger before sending.
+const MAX_BYTES = 4.5 * 1024 * 1024;
 
 async function extractExif(buffer) {
   const out = { hasGps: false, lat: null, lon: null, gpsBearing: null, capturedAt: null, cameraMake: null, cameraModel: null, lensModel: null };
@@ -65,7 +72,7 @@ exports.handler = async (event) => {
 
       const buffer = Buffer.from(dataBase64, 'base64');
       if (buffer.length > MAX_BYTES) {
-        return json(413, { error: `Photo is too large (${(buffer.length / 1e6).toFixed(1)}MB). Please keep uploads under 8MB.` });
+        return json(413, { error: `Photo is too large (${(buffer.length / 1e6).toFixed(1)}MB). Please keep uploads under ${(MAX_BYTES / 1e6).toFixed(1)}MB.` });
       }
 
       const exif = await extractExif(buffer);
@@ -76,6 +83,11 @@ exports.handler = async (event) => {
         metadata: { contentType: type, jobId, locationId, filename: filename || `${id}.jpg` },
       });
 
+      // Client-supplied GPS wins over server-side EXIF: the upload UI reads
+      // EXIF from the original file before it potentially downscales the
+      // image (which strips all EXIF) for the trip over the wire.
+      const hasClientGps = typeof body.lat === 'number' && typeof body.lon === 'number';
+      const hasGps = hasClientGps || exif.hasGps;
       const record = {
         id,
         jobId,
@@ -83,12 +95,12 @@ exports.handler = async (event) => {
         filename: filename || `${id}.jpg`,
         contentType: type,
         uploadedAt: new Date().toISOString(),
-        hasGps: exif.hasGps,
-        lat: exif.hasGps ? exif.lat : null,
-        lon: exif.hasGps ? exif.lon : null,
-        capturedAt: exif.capturedAt,
-        cameraMake: exif.cameraMake,
-        cameraModel: exif.cameraModel,
+        hasGps,
+        lat: hasClientGps ? body.lat : (exif.hasGps ? exif.lat : null),
+        lon: hasClientGps ? body.lon : (exif.hasGps ? exif.lon : null),
+        capturedAt: body.capturedAt || exif.capturedAt,
+        cameraMake: body.cameraMake || exif.cameraMake,
+        cameraModel: body.cameraModel || exif.cameraModel,
         // Manual fields always win; fall back to EXIF's compass heading if the
         // photographer didn't supply one and the phone happened to record it.
         bearing: body.bearing != null && body.bearing !== '' ? Number(body.bearing) : exif.gpsBearing,
