@@ -359,6 +359,8 @@ const STORE = 'recce-c7-favourites';
 const STORE_NAME = 'recce-c7-username';
 const STORE_COMMENTS = 'recce-c7-comments';
 const STORE_HIDDEN = 'recce-c7-hidden';
+const STORE_JOBTITLE = 'recce-c7-jobtitle';
+const loadJobTitle = fallback => { try { return localStorage.getItem(STORE_JOBTITLE) || fallback; } catch (e) { return fallback; } };
 // Ratings/comments/hidden-flags are shared server-side per "board" (see
 // /api/board) so they survive real page reloads and are visible to the
 // whole team, not just whoever's browser made the change. This page is
@@ -420,12 +422,12 @@ const loadComments = () => { try { return JSON.parse(localStorage.getItem(STORE_
 const loadHidden = () => { try { return JSON.parse(localStorage.getItem(STORE_HIDDEN)) || {}; } catch (e) { return {}; } };
 
 class Component extends DCLogic {
-  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: 'Eats Eats Phew — C7 Promo', editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false, editingComment: null, editCommentDraft: '' };
+  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: loadJobTitle('Uber Eats Phew — C7 Promo'), editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false, editingComment: null, editCommentDraft: '' };
 
   startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
   onTitleInput = e => this.setState({ titleDraft: e.target.value });
   onTitleKey = e => { if (e.key === 'Enter') this.commitTitle(); if (e.key === 'Escape') this.setState({ editingTitle: false }); };
-  commitTitle = () => { const v = this.state.titleDraft.trim(); this.setState({ jobTitle: v || this.state.jobTitle, editingTitle: false }); };
+  commitTitle = () => { const v = this.state.titleDraft.trim(); const jobTitle = v || this.state.jobTitle; try { localStorage.setItem(STORE_JOBTITLE, jobTitle); } catch (e) {} this.setState({ jobTitle, editingTitle: false }); };
   titleInputRef = el => { if (el) el.focus(); };
 
   startAddLocation = () => this.setState({ addingLocation: true, newLocationDraft: '' });
