@@ -8,9 +8,10 @@
 
 # Projects list is the homepage for now — shows /projects.html's content
 # at the root URL without an actual redirect (so the address bar stays
-# clean), leaving /projects.html itself working too. force=true because an
-# index.html (the demo map) already exists at "/" and would otherwise be
-# served directly instead of this rule ever being consulted.
+# clean), leaving /projects.html itself working too.
+# (The demo map lives at recce.html rather than index.html deliberately —
+# Netlify's link post-processing auto-rewrites any href="index.html" to "/",
+# which would otherwise silently loop the project card back to this list.)
 [[redirects]]
   from = "/"
   to = "/projects.html"
