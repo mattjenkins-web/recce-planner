@@ -1,18 +1,26 @@
-// GET  /api/locations?jobId=xxx          -> list locations for a job
-// POST /api/locations {jobId, name}      -> add a location to a job
-import { json, badRequest, notFound, serverError, newId, readJSON, writeJSON, parseBody } from './lib/_lib.mjs';
+// GET  /api/locations?jobId=xxx     -> list locations for one of the signed-in user's jobs
+// POST /api/locations {jobId, name} -> add a location to one of their jobs
+import { json, badRequest, notFound, serverError, parseBody } from './lib/_lib.mjs';
+import { clientForRequest, currentUser } from './lib/_supabase.mjs';
 
 export default async (req) => {
   try {
+    const { client, token } = clientForRequest(req);
+    const user = await currentUser(client, token);
+    if (!user) return json(401, { error: 'Sign in required.' });
+
     const url = new URL(req.url);
     const jobIdQ = url.searchParams.get('jobId');
 
     if (req.method === 'GET') {
       if (!jobIdQ) return badRequest('jobId is required.');
-      const jobs = await readJSON('jobs/index.json', []);
-      if (!jobs.some((j) => j.id === jobIdQ)) return notFound('Job not found.');
-      const locations = await readJSON(`jobs/${jobIdQ}/locations.json`, []);
-      return json(200, { locations });
+      const { data: locations, error } = await client
+        .from('locations')
+        .select('id, name, created_at')
+        .eq('job_id', jobIdQ)
+        .order('created_at');
+      if (error) return serverError(error);
+      return json(200, { locations: locations.map((l) => ({ id: l.id, name: l.name, createdAt: l.created_at })) });
     }
 
     if (req.method === 'POST') {
@@ -22,15 +30,17 @@ export default async (req) => {
       if (!id) return badRequest('jobId is required.');
       if (!name) return badRequest('A location name is required.');
 
-      const jobs = await readJSON('jobs/index.json', []);
-      if (!jobs.some((j) => j.id === id)) return notFound('Job not found.');
-
-      const locations = await readJSON(`jobs/${id}/locations.json`, []);
-      const location = { id: newId('loc'), name, createdAt: new Date().toISOString() };
-      locations.push(location);
-      await writeJSON(`jobs/${id}/locations.json`, locations);
-      await writeJSON(`jobs/${id}/locations/${location.id}/photos.json`, []);
-      return json(201, { location });
+      const { data: location, error } = await client
+        .from('locations')
+        .insert({ job_id: id, name })
+        .select('id, name, created_at')
+        .single();
+      // Row-level security silently rejects an insert against a job you
+      // don't own (the policy's WITH CHECK fails) — that surfaces here as a
+      // generic Postgres error rather than one naming the job, so a 404
+      // ("Job not found") reads better to the caller than the raw DB error.
+      if (error) return notFound('Job not found.');
+      return json(201, { location: { id: location.id, name: location.name, createdAt: location.created_at } });
     }
 
     return json(405, { error: 'Method not allowed' });
