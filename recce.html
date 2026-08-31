@@ -161,17 +161,28 @@
       </sc-if>
     </div>
 
-    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; flex: none">
-      <button class="navbtn" onClick="{{ prev }}" aria-label="Previous frame">‹</button>
-      <div onMouseDown="{{ onThumbDragStart }}" style="width: 40px; height: 4px; border-radius: 999px; background: var(--ui-line); cursor: row-resize"></div>
-      <button class="navbtn" onClick="{{ next }}" aria-label="Next frame">›</button>
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; flex: none">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <button class="navbtn" onClick="{{ prev }}" aria-label="Previous frame">‹</button>
+        <div onMouseDown="{{ onThumbDragStart }}" style="width: 40px; height: 4px; border-radius: 999px; background: var(--ui-line); cursor: row-resize"></div>
+        <button class="navbtn" onClick="{{ next }}" aria-label="Next frame">›</button>
+      </div>
+      <select onChange="{{ onSortChange }}" value="{{ sortMode }}" aria-label="Sort thumbnails" style="font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--ui-line); background: var(--ui-hover); color: var(--ui-ink); font-family: var(--font-body); cursor: pointer">
+        <sc-for list="{{ sortOptions }}" as="so" hint-placeholder-count="5">
+          <option value="{{ so.value }}">{{ so.label }}</option>
+        </sc-for>
+      </select>
     </div>
+    <label style="display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--ui-soft); cursor: pointer; user-select: none">
+      <input type="checkbox" checked="{{ clusterNearby }}" onChange="{{ onClusterToggle }}" style="cursor: pointer">
+      Cluster Sun/Scout photos next to their nearest Frame
+    </label>
     <div ref="{{ thumbStripRef }}" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 8px; padding: 3px 2px 6px; flex: none">
       <sc-if value="{{ showHidden }}" hint-placeholder-val="{{ false }}">
         <div style="flex: none; align-self: center; font-size: 11px; color: var(--ui-soft); padding: 0 6px; white-space: nowrap">Viewing hidden frames — click the eye icon to restore</div>
       </sc-if>
       <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="6">
-        <div ref="{{ t.nodeRef }}" draggable="true" onDragStart="{{ t.onDragStart }}" onDragOver="{{ t.onDragOver }}" onDrop="{{ t.onDrop }}" style="flex: none; text-align: center">
+        <div ref="{{ t.nodeRef }}" draggable="{{ t.draggable }}" onDragStart="{{ t.onDragStart }}" onDragOver="{{ t.onDragOver }}" onDrop="{{ t.onDrop }}" style="flex: none; text-align: center; cursor: {{ t.dragCursor }}">
           <div style="position: relative">
             <img ref="{{ t.imgRef }}" onClick="{{ t.onClick }}" alt="{{ t.label }}" style="{{ t.style }}">
             <sc-if value="{{ t.hasStars }}" hint-placeholder-val="{{ false }}">
@@ -429,6 +440,14 @@ function shotPinText(i) {
   const s = SHOTS[i], meta = TYPE_META[s.type];
   return meta ? `${meta.pinPrefix}${shotTypeRank(i)}` : s.id;
 }
+// Flat-earth approximation (metres) — plenty accurate at park scale, used
+// only to find "closest camera position" for the cluster-by-proximity view.
+function shotDist(i, j) {
+  const a = SHOTS[i], b = SHOTS[j];
+  const dLat = (a.lat - b.lat) * 111320;
+  const dLon = (a.lon - b.lon) * 111320 * Math.cos(a.lat * Math.PI / 180);
+  return Math.sqrt(dLat * dLat + dLon * dLon);
+}
 const FOV = { 24: { h: 57.6, v: 34.4 }, 20: { h: 67.0, v: 40.7 } }; // Cadrage burn-in, Alexa Mini 3.2K 1.78:1
 const SITE = { lat: -37.81998, lon: 144.98342 };
 const DEFAULT_DATE = '2026-09-02'; // shoot date
@@ -501,7 +520,7 @@ const loadComments = () => { try { return JSON.parse(localStorage.getItem(STORE_
 const loadHidden = () => { try { return JSON.parse(localStorage.getItem(STORE_HIDDEN)) || {}; } catch (e) { return {}; } };
 
 class Component extends DCLogic {
-  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], typeFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: loadJobTitle('Uber Eats Phew — C7 Promo'), editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false, editingComment: null, editCommentDraft: '' };
+  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], typeFilter: [], sortMode: 'custom', clusterNearby: false, pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: loadJobTitle('Uber Eats Phew — C7 Promo'), editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false, editingComment: null, editCommentDraft: '' };
 
   startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
   onTitleInput = e => this.setState({ titleDraft: e.target.value });
@@ -674,8 +693,55 @@ class Component extends DCLogic {
   visible() {
     let base = this.state.starFilter.length ? this.state.order.filter(i => this.state.starFilter.indexOf(this.rating(i)) >= 0) : this.state.order;
     if (this.state.typeFilter.length) base = base.filter(i => this.state.typeFilter.indexOf(SHOTS[i].type || 'camera') >= 0);
-    return this.state.showHidden ? base.filter(i => this.state.hidden[SHOTS[i].id]) : base.filter(i => !this.state.hidden[SHOTS[i].id]);
+    base = this.state.showHidden ? base.filter(i => this.state.hidden[SHOTS[i].id]) : base.filter(i => !this.state.hidden[SHOTS[i].id]);
+    // Clustering answers a different question ("what's near this frame?")
+    // than the sort dropdown ("what order overall?") — the two don't
+    // compose, so clustering just wins outright whenever it's checked,
+    // regardless of which sort mode is selected underneath it.
+    return this.state.clusterNearby ? this.clusterByProximity(base) : this.sortShots(base);
   }
+  // Groups every Scout/Sun still right after whichever Frame shot is
+  // physically closest to it (Sun before Scout within a cluster, per what's
+  // most useful to review first), so browsing the strip reads as
+  // "camera position → what the sky looks like here → ground reference".
+  // Works on top of any combination of the type-filter chips: if Frame
+  // shots are filtered out entirely, there's nothing to cluster against,
+  // so it quietly falls back to the incoming order instead of guessing.
+  clusterByProximity(list) {
+    const frames = list.filter(i => !SHOTS[i].type);
+    if (!frames.length) return list;
+    const others = list.filter(i => SHOTS[i].type);
+    const nearestFrame = i => frames.reduce((best, f) =>
+      shotDist(i, f) < shotDist(i, best) ? f : best, frames[0]);
+    const typeOrder = { sunseeker: 0, iphone: 1 };
+    const byFrame = new Map();
+    others.forEach(i => {
+      const f = nearestFrame(i);
+      if (!byFrame.has(f)) byFrame.set(f, []);
+      byFrame.get(f).push(i);
+    });
+    byFrame.forEach((group, f) => group.sort((a, b) =>
+      (typeOrder[SHOTS[a].type] - typeOrder[SHOTS[b].type]) || (shotDist(a, f) - shotDist(b, f))));
+    const result = [];
+    frames.forEach(f => { result.push(f); if (byFrame.has(f)) result.push(...byFrame.get(f)); });
+    return result;
+  }
+  // "Custom order" is the existing drag-to-arrange list (this.state.order)
+  // and is left untouched here. Every other mode re-sorts a *copy* of the
+  // already-filtered list, so switching back to Custom always restores
+  // whatever arrangement was last dragged, unaffected by other sort modes.
+  sortShots(list) {
+    const mode = this.state.sortMode;
+    if (!mode || mode === 'custom') return list;
+    const sorted = list.slice();
+    if (mode === 'az') sorted.sort((a, b) => shotLabel(a).localeCompare(shotLabel(b)));
+    else if (mode === 'newest') sorted.sort((a, b) => minutesOf(SHOTS[b].t) - minutesOf(SHOTS[a].t));
+    else if (mode === 'oldest') sorted.sort((a, b) => minutesOf(SHOTS[a].t) - minutesOf(SHOTS[b].t));
+    else if (mode === 'rating') sorted.sort((a, b) => this.rating(b) - this.rating(a));
+    return sorted;
+  }
+  onSortChange = e => this.setState({ sortMode: e.target.value }, () => this.paint());
+  onClusterToggle = e => this.setState({ clusterNearby: e.target.checked }, () => this.paint());
   toggleTypeFilter(type) {
     const cur = this.state.typeFilter;
     const typeFilter = cur.indexOf(type) >= 0 ? cur.filter(x => x !== type) : [...cur, type];
@@ -1136,6 +1202,7 @@ class Component extends DCLogic {
     const s = this.shot(), lib = this.lib, ev = this.events(), p = this.pal();
     const fav = this.isFav(this.state.sel);
     const th = this.state.thumbH, tw = Math.round(th * 1.45);
+    const canDrag = this.state.sortMode === 'custom' && !this.state.clusterNearby;
     const thumbs = this.visible().map(i => {
       const on = i === this.state.sel, rt = this.rating(i);
       const typeColor = (TYPE_META[SHOTS[i].type] || {}).color;
@@ -1143,13 +1210,19 @@ class Component extends DCLogic {
         key: i, id: SHOTS[i].id, label: shotLabel(i), onClick: () => this.select(i),
         imgRef: el => { if (el) el.src = `photos/${SHOTS[i].f}.jpg`; },
         nodeRef: el => { if (!this.thumbNodes) this.thumbNodes = {}; if (el) this.thumbNodes[i] = el; },
-        onDragStart: e => { e.dataTransfer.effectAllowed = 'move'; this.dragI = i; },
-        onDragOver: e => e.preventDefault(),
-        onDrop: e => { e.preventDefault(); if (this.dragI != null) this.reorder(this.dragI, i); this.dragI = null; },
+        // Dragging to reorder only makes sense in Custom order — any other
+        // sort mode computes the display order itself each render, so a
+        // drag would have no visible effect while quietly overwriting the
+        // saved custom order underneath it.
+        draggable: canDrag,
+        dragCursor: canDrag ? 'grab' : 'default',
+        onDragStart: canDrag ? (e => { e.dataTransfer.effectAllowed = 'move'; this.dragI = i; }) : undefined,
+        onDragOver: canDrag ? (e => e.preventDefault()) : undefined,
+        onDrop: canDrag ? (e => { e.preventDefault(); if (this.dragI != null) this.reorder(this.dragI, i); this.dragI = null; }) : undefined,
         // Unselected thumbnails show their type colour as a border (blank
         // for ordinary Cadrage frames) so Scout/Sun stills stand out at a
         // glance in the filmstrip, same colour language as the map pins.
-        style: `width:${tw}px; height:${th}px; object-fit:cover; border-radius:8px; display:block; cursor:grab; ` +
+        style: `width:${tw}px; height:${th}px; object-fit:cover; border-radius:8px; display:block; cursor:${canDrag ? 'grab' : 'pointer'}; ` +
           `border:2.5px solid ${on ? p.accent : (typeColor || 'transparent')}; ` +
           `box-shadow:${on ? '0 0 0 3px ' + p.halo + ', 0 4px 12px rgba(0,0,0,.25)' : 'none'}; opacity:${on ? 1 : .78}; ` +
           `transform:scale(${on ? 1.06 : 1}); transition:opacity .15s, transform .15s, border-color .15s`,
@@ -1271,6 +1344,16 @@ class Component extends DCLogic {
           style: `background:${active ? meta.color : p.hover}; color:${active ? '#fff' : p.ink};`,
         };
       }).filter(c => c.count > 0),
+      sortMode: this.state.sortMode,
+      onSortChange: this.onSortChange,
+      sortOptions: [
+        { value: 'custom', label: 'Custom order' },
+        { value: 'az', label: 'Name (A–Z)' },
+        { value: 'newest', label: 'Newest first' },
+        { value: 'oldest', label: 'Oldest first' },
+        { value: 'rating', label: 'Highest rated' },
+      ],
+      clusterNearby: this.state.clusterNearby, onClusterToggle: this.onClusterToggle,
       showHidden: this.state.showHidden,
       hiddenCount: Object.keys(this.state.hidden).length,
       hasHidden: Object.keys(this.state.hidden).length > 0 || this.state.showHidden,
