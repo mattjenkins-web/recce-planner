@@ -96,14 +96,16 @@
     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px">
       <div style="display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden">
         <div style="width: 32px; height: 32px; border-radius: 999px; background: var(--ui-rose); border: 2px solid var(--ui-line); flex: none; position: relative">
-          <div style="position: absolute; inset: 0; transform: rotate({{ bearing }}deg); transition: transform .25s ease">
-            <svg viewBox="0 0 32 32" width="32" height="32">
-              <path d="M16 4 L20 17 L16 14.5 L12 17 Z" fill="var(--ui-accent)"></path>
-            </svg>
-          </div>
+          <sc-if value="{{ hasBearing }}" hint-placeholder-val="{{ true }}">
+            <div style="position: absolute; inset: 0; transform: rotate({{ bearing }}deg); transition: transform .25s ease">
+              <svg viewBox="0 0 32 32" width="32" height="32">
+                <path d="M16 4 L20 17 L16 14.5 L12 17 Z" fill="var(--ui-accent)"></path>
+              </svg>
+            </div>
+          </sc-if>
         </div>
         <div style="min-width: 0; overflow: hidden">
-          <div style="font-family: var(--font-heading); font-size: 21px; color: var(--ui-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Frame {{ label }}</div>
+          <div style="font-family: var(--font-heading); font-size: 21px; color: var(--ui-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ label }}</div>
           <div style="font-size: 12px; color: var(--ui-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap">scouted {{ clock }} · Looking {{ facing }} · {{ lens }} · tilt {{ tilt }}</div>
           <div style="font-size: 12px; font-weight: 600; color: var(--ui-deep); overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ sunLine }}</div>
         </div>
@@ -132,6 +134,16 @@
       </div>
     </div>
 
+    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px">
+      <span style="font-size: 10px; font-weight: 700; color: var(--ui-soft); text-transform: uppercase; letter-spacing: .06em">Show</span>
+      <sc-for list="{{ typeFilterChips }}" as="tf" hint-placeholder-count="3">
+        <button class="chip" onClick="{{ tf.onClick }}" style="{{ tf.style }} padding: 5px 11px; font-size: 12px; display: flex; align-items: center; gap: 6px">
+          <span style="width: 8px; height: 8px; border-radius: 999px; background: {{ tf.dotColor }}; flex: none"></span>
+          {{ tf.label }} {{ tf.count }}
+        </button>
+      </sc-for>
+    </div>
+
     <div style="display: flex; align-items: center; gap: 3px; margin-bottom: 10px">
       <sc-for list="{{ ratingStars }}" as="rs" hint-placeholder-count="3">
         <button onClick="{{ rs.onClick }}" aria-label="Rate {{ rs.n }} star" style="border: none; background: none; cursor: pointer; padding: 2px; line-height: 0">
@@ -144,6 +156,9 @@
 
     <div style="position: relative; border-radius: var(--radius-md); overflow: hidden; aspect-ratio: 1.544; width: 100%; flex: none">
       <img src="photos/shot-01.jpg" ref="{{ photoRef }}" alt="Frame" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+      <sc-if value="{{ mainTypeColor }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 5px; background: {{ mainTypeColor }}"></div>
+      </sc-if>
     </div>
 
     <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; flex: none">
@@ -158,7 +173,7 @@
       <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="6">
         <div ref="{{ t.nodeRef }}" draggable="true" onDragStart="{{ t.onDragStart }}" onDragOver="{{ t.onDragOver }}" onDrop="{{ t.onDrop }}" style="flex: none; text-align: center">
           <div style="position: relative">
-            <img ref="{{ t.imgRef }}" onClick="{{ t.onClick }}" alt="Frame {{ t.id }}" style="{{ t.style }}">
+            <img ref="{{ t.imgRef }}" onClick="{{ t.onClick }}" alt="{{ t.label }}" style="{{ t.style }}">
             <sc-if value="{{ t.hasStars }}" hint-placeholder-val="{{ false }}">
               <div style="position: absolute; bottom: 4px; left: 4px; display: flex; gap: 1px">{{ t.starIcons }}</div>
             </sc-if>
@@ -176,7 +191,7 @@
               </sc-if>
             </button>
           </div>
-          <div style="font-size: 10px; color: var(--ui-soft); margin-top: 3px">Frame {{ t.id }}</div>
+          <div style="font-size: 10px; color: var(--ui-soft); margin-top: 3px">{{ t.label }}</div>
         </div>
       </sc-for>
       <div style="flex: none; align-self: flex-start">
@@ -190,7 +205,7 @@
   </div>
 
   <div style="flex: none; display: flex; flex-direction: column; gap: 10px; background: var(--ui-panel); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-lg)">
-    <div style="font-family: var(--font-heading); font-size: 15px; color: var(--ui-ink)">Comments · Frame {{ label }}</div>
+    <div style="font-family: var(--font-heading); font-size: 15px; color: var(--ui-ink)">Comments · {{ label }}</div>
     <sc-if value="{{ hasComments }}" hint-placeholder-val="{{ false }}">
       <div style="display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto">
         <sc-for list="{{ shotComments }}" as="c" hint-placeholder-count="2">
@@ -362,7 +377,58 @@ const SHOTS = [
   { id: '33', f: 'shot-33', lat: -37.817142, lon: 144.982192, bearing: 164, tilt: 0, mm: 13, t: '14:04:24', type: 'iphone' },
   { id: '34', f: 'shot-34', lat: -37.817497, lon: 144.982497, bearing: 158, tilt: 0, mm: 26, t: '14:06:11', type: 'iphone' },
   { id: '35', f: 'shot-35', lat: -37.817500, lon: 144.982589, bearing: 153, tilt: 0, mm: 26, t: '14:06:28', type: 'iphone' },
+  // Sun Seeker AR captures — wide panoramic stills (no single facing
+  // direction, no bearing in their EXIF either), used to cross-check the
+  // computed sun path against what the app showed pointed at the real sky.
+  { id: '36', f: 'shot-36', lat: -37.818713, lon: 144.984177, bearing: 0, tilt: 0, mm: 24, t: '12:21:51', type: 'sunseeker' },
+  { id: '37', f: 'shot-37', lat: -37.818713, lon: 144.984177, bearing: 0, tilt: 0, mm: 24, t: '12:21:53', type: 'sunseeker' },
+  { id: '38', f: 'shot-38', lat: -37.818713, lon: 144.984177, bearing: 0, tilt: 0, mm: 24, t: '12:21:55', type: 'sunseeker' },
+  { id: '39', f: 'shot-39', lat: -37.818897, lon: 144.984684, bearing: 0, tilt: 0, mm: 24, t: '12:25:50', type: 'sunseeker' },
+  { id: '40', f: 'shot-40', lat: -37.818897, lon: 144.984684, bearing: 0, tilt: 0, mm: 24, t: '12:25:53', type: 'sunseeker' },
+  { id: '41', f: 'shot-41', lat: -37.819030, lon: 144.985147, bearing: 0, tilt: 0, mm: 24, t: '12:27:34', type: 'sunseeker' },
+  { id: '42', f: 'shot-42', lat: -37.819030, lon: 144.985147, bearing: 0, tilt: 0, mm: 24, t: '12:27:37', type: 'sunseeker' },
+  { id: '43', f: 'shot-43', lat: -37.819933, lon: 144.985125, bearing: 0, tilt: 0, mm: 24, t: '12:30:24', type: 'sunseeker' },
+  { id: '44', f: 'shot-44', lat: -37.819933, lon: 144.985125, bearing: 0, tilt: 0, mm: 24, t: '12:30:28', type: 'sunseeker' },
+  { id: '45', f: 'shot-45', lat: -37.819933, lon: 144.985125, bearing: 0, tilt: 0, mm: 24, t: '12:30:31', type: 'sunseeker' },
+  { id: '46', f: 'shot-46', lat: -37.821503, lon: 144.984161, bearing: 0, tilt: 0, mm: 24, t: '12:35:52', type: 'sunseeker' },
+  { id: '47', f: 'shot-47', lat: -37.821503, lon: 144.984161, bearing: 0, tilt: 0, mm: 24, t: '12:35:55', type: 'sunseeker' },
+  { id: '48', f: 'shot-48', lat: -37.821503, lon: 144.984161, bearing: 0, tilt: 0, mm: 24, t: '12:36:01', type: 'sunseeker' },
+  { id: '49', f: 'shot-49', lat: -37.821571, lon: 144.984232, bearing: 0, tilt: 0, mm: 24, t: '12:36:53', type: 'sunseeker' },
+  { id: '50', f: 'shot-50', lat: -37.819963, lon: 144.981633, bearing: 0, tilt: 0, mm: 24, t: '12:41:41', type: 'sunseeker' },
+  { id: '51', f: 'shot-51', lat: -37.819963, lon: 144.981633, bearing: 0, tilt: 0, mm: 24, t: '12:41:43', type: 'sunseeker' },
+  { id: '52', f: 'shot-52', lat: -37.819054, lon: 144.982058, bearing: 0, tilt: 0, mm: 24, t: '12:44:45', type: 'sunseeker' },
+  { id: '53', f: 'shot-53', lat: -37.819054, lon: 144.982058, bearing: 0, tilt: 0, mm: 24, t: '12:44:49', type: 'sunseeker' },
+  { id: '54', f: 'shot-54', lat: -37.817679, lon: 144.983644, bearing: 0, tilt: 0, mm: 24, t: '14:12:53', type: 'sunseeker' },
+  { id: '55', f: 'shot-55', lat: -37.817679, lon: 144.983644, bearing: 0, tilt: 0, mm: 24, t: '14:12:57', type: 'sunseeker' },
+  { id: '56', f: 'shot-56', lat: -37.817694, lon: 144.983709, bearing: 0, tilt: 0, mm: 24, t: '14:23:02', type: 'sunseeker' },
+  { id: '57', f: 'shot-57', lat: -37.817694, lon: 144.983709, bearing: 0, tilt: 0, mm: 24, t: '14:23:06', type: 'sunseeker' },
+  { id: '58', f: 'shot-58', lat: -37.817777, lon: 144.983592, bearing: 0, tilt: 0, mm: 24, t: '14:26:25', type: 'sunseeker' },
+  { id: '59', f: 'shot-59', lat: -37.817777, lon: 144.983592, bearing: 0, tilt: 0, mm: 24, t: '14:26:28', type: 'sunseeker' },
+  { id: '60', f: 'shot-60', lat: -37.817566, lon: 144.982376, bearing: 0, tilt: 0, mm: 24, t: '14:31:49', type: 'sunseeker' },
+  { id: '61', f: 'shot-61', lat: -37.817566, lon: 144.982376, bearing: 0, tilt: 0, mm: 24, t: '14:31:52', type: 'sunseeker' },
 ];
+// Non-camera shot types get their own name, colour, and numbering — separate
+// from the Cadrage "Frame" sequence, restarting at 01 for each type. Add a
+// new entry here (matching the CSS .pin.is-<type> rules above) when a new
+// reference-photo source shows up (e.g. Sun Seeker).
+const TYPE_META = {
+  iphone: { label: 'Scout', color: '#d6483f', pinPrefix: 'S' },
+  sunseeker: { label: 'Sun', color: '#d9a520', pinPrefix: 'Y' },
+};
+function shotTypeRank(i) {
+  const type = SHOTS[i].type;
+  let rank = 0;
+  for (let k = 0; k <= i; k++) if (SHOTS[k].type === type) rank++;
+  return rank;
+}
+function shotLabel(i) {
+  const s = SHOTS[i], meta = TYPE_META[s.type];
+  return meta ? `${meta.label} ${String(shotTypeRank(i)).padStart(2, '0')}` : `Frame ${s.id}`;
+}
+function shotPinText(i) {
+  const s = SHOTS[i], meta = TYPE_META[s.type];
+  return meta ? `${meta.pinPrefix}${shotTypeRank(i)}` : s.id;
+}
 const FOV = { 24: { h: 57.6, v: 34.4 }, 20: { h: 67.0, v: 40.7 } }; // Cadrage burn-in, Alexa Mini 3.2K 1.78:1
 const SITE = { lat: -37.81998, lon: 144.98342 };
 const DEFAULT_DATE = '2026-09-02'; // shoot date
@@ -435,7 +501,7 @@ const loadComments = () => { try { return JSON.parse(localStorage.getItem(STORE_
 const loadHidden = () => { try { return JSON.parse(localStorage.getItem(STORE_HIDDEN)) || {}; } catch (e) { return {}; } };
 
 class Component extends DCLogic {
-  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: loadJobTitle('Uber Eats Phew — C7 Promo'), editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false, editingComment: null, editCommentDraft: '' };
+  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], typeFilter: [], pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: loadJobTitle('Uber Eats Phew — C7 Promo'), editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false, editingComment: null, editCommentDraft: '' };
 
   startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
   onTitleInput = e => this.setState({ titleDraft: e.target.value });
@@ -606,8 +672,14 @@ class Component extends DCLogic {
   rating(i) { return this.state.favs[SHOTS[i].id] || 0; }
   isFav(i) { return this.rating(i) > 0; }
   visible() {
-    const base = this.state.starFilter.length ? this.state.order.filter(i => this.state.starFilter.indexOf(this.rating(i)) >= 0) : this.state.order;
+    let base = this.state.starFilter.length ? this.state.order.filter(i => this.state.starFilter.indexOf(this.rating(i)) >= 0) : this.state.order;
+    if (this.state.typeFilter.length) base = base.filter(i => this.state.typeFilter.indexOf(SHOTS[i].type || 'camera') >= 0);
     return this.state.showHidden ? base.filter(i => this.state.hidden[SHOTS[i].id]) : base.filter(i => !this.state.hidden[SHOTS[i].id]);
+  }
+  toggleTypeFilter(type) {
+    const cur = this.state.typeFilter;
+    const typeFilter = cur.indexOf(type) >= 0 ? cur.filter(x => x !== type) : [...cur, type];
+    this.setState({ typeFilter }, () => { const v = this.visible(); if (v.indexOf(this.state.sel) < 0 && v.length) this.select(v[0]); else this.paint(); });
   }
   toggleHidden(i) {
     const id = SHOTS[i].id;
@@ -699,7 +771,7 @@ class Component extends DCLogic {
       let m;
       try {
         m = L.marker([s.lat, s.lon], { zIndexOffset: 200,
-          icon: L.divIcon({ className: 'pin' + typeClass, html: `<div class="pin-dot">${s.id}</div>`, iconSize: [28, 28], iconAnchor: [14 - dx, 14 - dy] }) }).addTo(this.pinLayer);
+          icon: L.divIcon({ className: 'pin' + typeClass, html: `<div class="pin-dot">${shotPinText(i)}</div>`, iconSize: [28, 28], iconAnchor: [14 - dx, 14 - dy] }) }).addTo(this.pinLayer);
       } catch (e) {
         console.warn('initMap: skipped placing a pin after a renderer error', e);
         m = L.marker([s.lat, s.lon]);
@@ -1015,7 +1087,12 @@ class Component extends DCLogic {
   /** The day's sun path projected into the selected frame through its lens. */
   overlay() {
     if (!this.lib) return null;
-    const { sunPos, angleDelta } = this.lib, s = this.shot(), fov = this.fov(s), p = this.pal();
+    const s = this.shot();
+    // No real bearing/FOV for these (see hasBearing note in renderVals) —
+    // drawing a frame-relative sun overlay on a wide panorama would imply a
+    // framing relationship that doesn't exist.
+    if (s.type === 'sunseeker') return null;
+    const { sunPos, angleDelta } = this.lib, fov = this.fov(s), p = this.pal();
     const FW = 1000, FH = 690, pw = 840, ph = pw / (4032 / 2610);
     const px0 = (FW - pw) / 2, py0 = (FH - ph) / 2, cx = FW / 2, cy = FH / 2;
     const kx = pw / (2 * Math.tan(fov.h / 2 * RAD)), ky = ph / (2 * Math.tan(fov.v / 2 * RAD));
@@ -1061,15 +1138,19 @@ class Component extends DCLogic {
     const th = this.state.thumbH, tw = Math.round(th * 1.45);
     const thumbs = this.visible().map(i => {
       const on = i === this.state.sel, rt = this.rating(i);
+      const typeColor = (TYPE_META[SHOTS[i].type] || {}).color;
       return {
-        key: i, id: SHOTS[i].id, onClick: () => this.select(i),
+        key: i, id: SHOTS[i].id, label: shotLabel(i), onClick: () => this.select(i),
         imgRef: el => { if (el) el.src = `photos/${SHOTS[i].f}.jpg`; },
         nodeRef: el => { if (!this.thumbNodes) this.thumbNodes = {}; if (el) this.thumbNodes[i] = el; },
         onDragStart: e => { e.dataTransfer.effectAllowed = 'move'; this.dragI = i; },
         onDragOver: e => e.preventDefault(),
         onDrop: e => { e.preventDefault(); if (this.dragI != null) this.reorder(this.dragI, i); this.dragI = null; },
+        // Unselected thumbnails show their type colour as a border (blank
+        // for ordinary Cadrage frames) so Scout/Sun stills stand out at a
+        // glance in the filmstrip, same colour language as the map pins.
         style: `width:${tw}px; height:${th}px; object-fit:cover; border-radius:8px; display:block; cursor:grab; ` +
-          `border:2.5px solid ${on ? p.accent : 'transparent'}; ` +
+          `border:2.5px solid ${on ? p.accent : (typeColor || 'transparent')}; ` +
           `box-shadow:${on ? '0 0 0 3px ' + p.halo + ', 0 4px 12px rgba(0,0,0,.25)' : 'none'}; opacity:${on ? 1 : .78}; ` +
           `transform:scale(${on ? 1.06 : 1}); transition:opacity .15s, transform .15s, border-color .15s`,
         hasStars: rt > 0, starIcons: this.starIcons(rt, 13),
@@ -1080,7 +1161,12 @@ class Component extends DCLogic {
       };
     });
     const now = lib ? lib.sunPos(this.date(this.state.minutes), s.lat, s.lon) : null;
-    const rel = lib && now ? lib.angleDelta(s.bearing, now.azimuth) : 0;
+    // Sun Seeker stills are wide panoramic captures (7000px+), not a single
+    // fixed viewing direction — there's no real "bearing" for them (their
+    // EXIF has none either), so the frame-relative sun position doesn't
+    // apply. hasBearing gates the compass arrow and "frame left/right" text.
+    const hasBearing = s.type !== 'sunseeker';
+    const rel = lib && now && hasBearing ? lib.angleDelta(s.bearing, now.azimuth) : 0;
     const side = Math.abs(rel) > 90 ? 'behind camera' : (rel < 0 ? `${Math.round(-rel)}° frame left` : `${Math.round(rel)}° frame right`);
     const chipOn = `background:${p.accent}; color:${p.panel}`;
     const chipOff = `background:${p.hover}; color:${p.ink}`;
@@ -1126,10 +1212,11 @@ class Component extends DCLogic {
       sunToggleLabel: this.state.showSun ? 'Sun path on' : 'Sun path off',
       photoRef: el => { if (el) el.src = `photos/${s.f}.jpg`; },
       frameOverlay: this.overlay(),
-      label: s.id, bearing: s.bearing, tilt: `${s.tilt}°`, lens: `${s.mm}mm`,
-      facing: lib ? `${lib.compass(s.bearing)} ${s.bearing}°` : `${s.bearing}°`,
+      label: shotLabel(this.state.sel), mainTypeColor: (TYPE_META[s.type] || {}).color || '',
+      bearing: s.bearing, hasBearing, tilt: `${s.tilt}°`, lens: `${s.mm}mm`,
+      facing: hasBearing ? (lib ? `${lib.compass(s.bearing)} ${s.bearing}°` : `${s.bearing}°`) : 'wide panorama',
       clock: this.date(minutesOf(s.t)).toLocaleTimeString('en-AU', { ...TZ, second: '2-digit' }).replace(' ', '').toLowerCase(),
-      sunLine: now ? `Sun ${lib.compass(now.azimuth)} ${Math.round(now.azimuth)}° · ${Math.round(now.elevation)}° up · ${side}` : '',
+      sunLine: now ? `Sun ${lib.compass(now.azimuth)} ${Math.round(now.azimuth)}° · ${Math.round(now.elevation)}° up${hasBearing ? ' · ' + side : ''}` : '',
       scrubClock: this.fmt(this.date(this.state.minutes)),
       minutes: Math.round(this.state.minutes),
       dayMin: ev ? Math.round(this.mins(ev.sunrise)) : 400,
@@ -1168,9 +1255,22 @@ class Component extends DCLogic {
       commentDraft: this.state.commentDraft,
       onCommentInput: e => this.setState({ commentDraft: e.target.value }),
       postComment: () => this.postComment(),
-      showAll: () => this.setState({ starFilter: [], showHidden: false }, () => this.paint()),
-      allStyle: this.state.starFilter.length ? chipOff : chipOn,
+      showAll: () => this.setState({ starFilter: [], typeFilter: [], showHidden: false }, () => this.paint()),
+      allStyle: (this.state.starFilter.length || this.state.typeFilter.length) ? chipOff : chipOn,
       allLabel: `All ${SHOTS.length}`,
+      // One toggle chip per shot type/source, each an independent filter
+      // (same inclusion-list model as the star-rating filter): tap to
+      // isolate that type, tap again to bring it back. Empty = show all.
+      typeFilterChips: ['camera', 'iphone', 'sunseeker'].map(type => {
+        const meta = type === 'camera' ? { label: 'Frame', color: p.accent } : TYPE_META[type];
+        const count = SHOTS.filter(sh => (sh.type || 'camera') === type).length;
+        const active = this.state.typeFilter.indexOf(type) >= 0;
+        return {
+          count, label: meta.label, active, dotColor: meta.color,
+          onClick: () => this.toggleTypeFilter(type),
+          style: `background:${active ? meta.color : p.hover}; color:${active ? '#fff' : p.ink};`,
+        };
+      }).filter(c => c.count > 0),
       showHidden: this.state.showHidden,
       hiddenCount: Object.keys(this.state.hidden).length,
       hasHidden: Object.keys(this.state.hidden).length > 0 || this.state.showHidden,
