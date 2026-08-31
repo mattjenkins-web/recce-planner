@@ -40,7 +40,7 @@
               <div style="position: absolute; bottom: 12px; left: 14px; width: 28px; height: 28px; border-radius: 999px; background: #eef1f4; border: 2px solid #2f6f9f; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #1f4d70">01</div>
             </div>
             <div style="padding: 16px 16px 18px">
-              <div style="font-family: var(--font-heading); font-size: 18px; color: #1a2430; margin-bottom: 4px">Uber Eats Phew — C7 Promo</div>
+              <div style="font-family: var(--font-heading); font-size: 18px; color: #1a2430; margin-bottom: 4px">{{ demoJobTitle }}</div>
               <div style="font-size: 12px; color: #5c6b7a">1 location · 61 frames · shoot 02.09.26</div>
             </div>
           </div>
@@ -257,7 +257,7 @@ class Component extends DCLogic {
   state = {
     view: 'list', jobs: [], jobName: '', shootDate: todayISO(), locations: [], addingLocation: false, newLocationDraft: '', dragOverLoc: null,
     creating: false, createProgress: '', createError: null, doneJob: null, doneLocationCount: 0, donePhotoCount: 0,
-    userEmail: '',
+    userEmail: '', demoJobTitle: 'Uber Eats Phew — C7 Promo',
   };
 
   async componentDidMount() {
@@ -279,6 +279,16 @@ class Component extends DCLogic {
       // If the backend can't be reached, the page still works — it just
       // shows the seed card only, same as before this feature existed.
     }
+
+    // The demo card's title used to be hardcoded here, completely separate
+    // from the name the map page shows — renaming it on recce.html never
+    // reflected back here. Both now read the same shared "board" record
+    // (see /api/board, board.mjs) so a rename shows up everywhere.
+    try {
+      const boardRes = await fetch('/api/board?id=mcg-demo');
+      const boardData = boardRes.ok ? await boardRes.json() : null;
+      if (boardData && boardData.jobTitle) this.setState({ demoJobTitle: boardData.jobTitle });
+    } catch (e) {}
   }
 
   signOut = async (e) => {
@@ -388,6 +398,7 @@ class Component extends DCLogic {
       isList: this.state.view === 'list', isNew: this.state.view === 'new', isDone: this.state.view === 'done',
       startNewProject: this.startNewProject, backToList: this.backToList,
       userEmail: this.state.userEmail, signOut: this.signOut,
+      demoJobTitle: this.state.demoJobTitle,
       realJobCards,
       jobName: this.state.jobName, onJobNameInput: this.onJobNameInput,
       shootDate: this.state.shootDate, onShootDateInput: this.onShootDateInput,

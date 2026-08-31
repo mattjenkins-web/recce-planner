@@ -1,5 +1,5 @@
-// GET  /api/board?id=xxx                          -> { favs, hidden, comments } for one board
-// POST /api/board {id, favs?, hidden?, comments?}  -> overwrite whichever fields are present
+// GET  /api/board?id=xxx                                     -> { favs, hidden, comments, jobTitle } for one board
+// POST /api/board {id, favs?, hidden?, comments?, jobTitle?}  -> overwrite whichever fields are present
 //
 // A "board" is one shared map view (today, the single hardcoded demo map;
 // once the map is wired up per real project/location, its id will be
@@ -10,12 +10,18 @@
 // and it meant nobody's star picks or comments were actually shared with
 // the rest of the team. This makes that state real and shared.
 //
+// jobTitle joined the same mechanism for the same reason: renaming the job
+// on the map page used to only write to that browser's localStorage, so the
+// new name never showed up anywhere else that displays it (e.g. the
+// projects list card) — same class of bug as the original ratings problem.
+//
 // Each field is a small whole-object overwrite (favs/hidden are simple
-// shotId->value maps; comments is shotId->array), mirroring exactly what
-// used to be written to localStorage. Two people editing the *same* field
-// at the exact same instant could still clobber each other (last write
-// wins) — an acceptable tradeoff for a small team's casual use, and a real
-// improvement over today's "doesn't persist at all" baseline.
+// shotId->value maps; comments is shotId->array; jobTitle is a plain
+// string), mirroring exactly what used to be written to localStorage. Two
+// people editing the *same* field at the exact same instant could still
+// clobber each other (last write wins) — an acceptable tradeoff for a small
+// team's casual use, and a real improvement over today's "doesn't persist
+// at all" baseline.
 import { json, badRequest, serverError, readJSON, writeJSON } from './lib/_lib.mjs';
 
 export default async (req) => {
@@ -25,12 +31,13 @@ export default async (req) => {
     if (req.method === 'GET') {
       const id = url.searchParams.get('id');
       if (!id) return badRequest('id is required.');
-      const [favs, hidden, comments] = await Promise.all([
+      const [favs, hidden, comments, jobTitle] = await Promise.all([
         readJSON(`boards/${id}/favs.json`, {}),
         readJSON(`boards/${id}/hidden.json`, {}),
         readJSON(`boards/${id}/comments.json`, {}),
+        readJSON(`boards/${id}/jobTitle.json`, null),
       ]);
-      return json(200, { favs, hidden, comments });
+      return json(200, { favs, hidden, comments, jobTitle });
     }
 
     if (req.method === 'POST') {
@@ -43,6 +50,7 @@ export default async (req) => {
       if (body.favs !== undefined) writes.push(writeJSON(`boards/${id}/favs.json`, body.favs));
       if (body.hidden !== undefined) writes.push(writeJSON(`boards/${id}/hidden.json`, body.hidden));
       if (body.comments !== undefined) writes.push(writeJSON(`boards/${id}/comments.json`, body.comments));
+      if (body.jobTitle !== undefined) writes.push(writeJSON(`boards/${id}/jobTitle.json`, body.jobTitle));
       await Promise.all(writes);
       return json(200, { ok: true });
     }

@@ -525,7 +525,16 @@ class Component extends DCLogic {
   startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
   onTitleInput = e => this.setState({ titleDraft: e.target.value });
   onTitleKey = e => { if (e.key === 'Enter') this.commitTitle(); if (e.key === 'Escape') this.setState({ editingTitle: false }); };
-  commitTitle = () => { const v = this.state.titleDraft.trim(); const jobTitle = v || this.state.jobTitle; try { localStorage.setItem(STORE_JOBTITLE, jobTitle); } catch (e) {} this.setState({ jobTitle, editingTitle: false }); };
+  commitTitle = () => {
+    const v = this.state.titleDraft.trim();
+    const jobTitle = v || this.state.jobTitle;
+    try { localStorage.setItem(STORE_JOBTITLE, jobTitle); } catch (e) {}
+    // Shared via the board (see BOARD_ID above) so a rename here actually
+    // shows up everywhere else the job name is displayed — e.g. the
+    // projects list card, which used to just hardcode the old name.
+    syncBoard({ jobTitle });
+    this.setState({ jobTitle, editingTitle: false });
+  };
   titleInputRef = el => { if (el) el.focus(); };
 
   startAddLocation = () => this.setState({ addingLocation: true, newLocationDraft: '' });
@@ -648,11 +657,15 @@ class Component extends DCLogic {
     // above), and means everyone sees the same picks, not just this device.
     fetch(`/api/board?id=${BOARD_ID}`).then(r => r.ok ? r.json() : null).then(data => {
       if (!data) return;
-      this.setState({ favs: data.favs || {}, hidden: data.hidden || {}, comments: data.comments || {} }, () => {
+      this.setState({
+        favs: data.favs || {}, hidden: data.hidden || {}, comments: data.comments || {},
+        jobTitle: data.jobTitle || this.state.jobTitle,
+      }, () => {
         try {
           localStorage.setItem(STORE, JSON.stringify(this.state.favs));
           localStorage.setItem(STORE_HIDDEN, JSON.stringify(this.state.hidden));
           localStorage.setItem(STORE_COMMENTS, JSON.stringify(this.state.comments));
+          localStorage.setItem(STORE_JOBTITLE, this.state.jobTitle);
         } catch (e) {}
         this.paint();
       });
