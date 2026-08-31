@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — RecceBuddy</title>
+<link rel="stylesheet" href="_ds/organic-10521182-e334-4d5b-bf56-257cb7503073/styles.css">
+<script src="_ds/organic-10521182-e334-4d5b-bf56-257cb7503073/_ds_bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #182028; font-family: var(--font-body); }
+  * { box-sizing: border-box; }
+  input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid #2f6f9f !important; outline-offset: 2px; }
+</style>
+</head>
+<body>
+  <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px">
+    <div style="width: 100%; max-width: 380px">
+      <div style="font-family: var(--font-heading); font-size: 24px; color: #eef1f4; text-align: center; margin-bottom: 24px">RecceBuddy</div>
+      <div style="background: #eef1f4; border-radius: 20px; padding: 28px; box-shadow: 0 10px 26px rgba(0,0,0,.4)">
+        <div id="mode-title" style="font-family: var(--font-heading); font-size: 20px; color: #1a2430; margin-bottom: 18px">Sign in</div>
+
+        <label style="display:block; font-size:12px; font-weight:700; color:#5c6b7a; margin-bottom:6px">Email</label>
+        <input id="email" type="email" autocomplete="email" style="width:100%; font-size:14px; padding:10px 12px; border-radius:8px; border:1px solid rgba(26,36,48,.18); margin-bottom:14px; font-family:var(--font-body)">
+
+        <label style="display:block; font-size:12px; font-weight:700; color:#5c6b7a; margin-bottom:6px">Password</label>
+        <input id="password" type="password" autocomplete="current-password" style="width:100%; font-size:14px; padding:10px 12px; border-radius:8px; border:1px solid rgba(26,36,48,.18); margin-bottom:18px; font-family:var(--font-body)">
+
+        <div id="error" style="display:none; margin-bottom:14px; padding:10px 12px; background:rgba(192,86,33,.1); border:1px solid rgba(192,86,33,.3); border-radius:8px; color:#8c3c14; font-size:13px"></div>
+        <div id="info" style="display:none; margin-bottom:14px; padding:10px 12px; background:rgba(47,111,159,.08); border:1px solid rgba(47,111,159,.25); border-radius:8px; color:#1f4d70; font-size:13px"></div>
+
+        <button id="submit-btn" style="width:100%; background:#2f6f9f; color:#eef1f4; border:none; border-radius:999px; padding:12px; font-size:14px; font-weight:700; cursor:pointer; font-family:var(--font-body); margin-bottom:14px">Sign in</button>
+
+        <div style="text-align:center; font-size:13px; color:#5c6b7a">
+          <span id="toggle-prompt">Don't have an account?</span>
+          <a href="#" id="toggle-link" style="color:#2f6f9f; font-weight:700">Create one</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  var SUPABASE_URL = 'https://ohxgzvwflpiuzpaenotw.supabase.co';
+  var SUPABASE_PUBLISHABLE_KEY = 'sb_publishable__7lPSmdKMOOI9jvOm9lh7Q_nIIE74JK';
+  // Loaded from a blocking <script src> in <head>, so window.supabase is
+  // already defined by the time this runs.
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  var mode = 'signin';
+  var els = {
+    title: document.getElementById('mode-title'),
+    email: document.getElementById('email'),
+    password: document.getElementById('password'),
+    error: document.getElementById('error'),
+    info: document.getElementById('info'),
+    submit: document.getElementById('submit-btn'),
+    prompt: document.getElementById('toggle-prompt'),
+    toggle: document.getElementById('toggle-link'),
+  };
+
+  function showError(msg) { els.error.textContent = msg; els.error.style.display = 'block'; els.info.style.display = 'none'; }
+  function showInfo(msg) { els.info.textContent = msg; els.info.style.display = 'block'; els.error.style.display = 'none'; }
+  function clearMessages() { els.error.style.display = 'none'; els.info.style.display = 'none'; }
+
+  function redirectAfterLogin() {
+    var params = new URLSearchParams(window.location.search);
+    window.location.href = params.get('redirect') || '/projects.html';
+  }
+
+  els.toggle.addEventListener('click', function (e) {
+    e.preventDefault();
+    mode = mode === 'signin' ? 'signup' : 'signin';
+    clearMessages();
+    if (mode === 'signup') {
+      els.title.textContent = 'Create account';
+      els.submit.textContent = 'Create account';
+      els.prompt.textContent = 'Already have an account?';
+      els.toggle.textContent = 'Sign in';
+    } else {
+      els.title.textContent = 'Sign in';
+      els.submit.textContent = 'Sign in';
+      els.prompt.textContent = "Don't have an account?";
+      els.toggle.textContent = 'Create one';
+    }
+  });
+
+  els.submit.addEventListener('click', async function () {
+    clearMessages();
+    var email = els.email.value.trim();
+    var password = els.password.value;
+    if (!email || !password) { showError('Enter your email and password.'); return; }
+    els.submit.disabled = true;
+    els.submit.textContent = mode === 'signup' ? 'Creating account…' : 'Signing in…';
+    try {
+      if (mode === 'signup') {
+        var res = await sb.auth.signUp({ email: email, password: password });
+        if (res.error) throw res.error;
+        if (res.data.session) { redirectAfterLogin(); return; }
+        showInfo('Check your email to confirm your account, then sign in.');
+      } else {
+        var res2 = await sb.auth.signInWithPassword({ email: email, password: password });
+        if (res2.error) throw res2.error;
+        redirectAfterLogin();
+        return;
+      }
+    } catch (err) {
+      showError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      els.submit.disabled = false;
+      els.submit.textContent = mode === 'signup' ? 'Create account' : 'Sign in';
+    }
+  });
+
+  // Already signed in? Skip straight past this page.
+  sb.auth.getSession().then(function (res) {
+    if (res.data && res.data.session) redirectAfterLogin();
+  });
+
+  ['email', 'password'].forEach(function (id) {
+    document.getElementById(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') els.submit.click(); });
+  });
+</script>
+</body>
+</html>

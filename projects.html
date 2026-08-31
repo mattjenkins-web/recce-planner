@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="_ds/organic-10521182-e334-4d5b-bf56-257cb7503073/styles.css">
   <script src="_ds/organic-10521182-e334-4d5b-bf56-257cb7503073/_ds_bundle.js"></script>
   <script src="https://unpkg.com/exifr@7.1.3/dist/full.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     html, body { margin: 0; padding: 0; background: #182028; }
     a { color: #eef1f4; text-decoration: none; }
@@ -25,7 +26,12 @@
     <div style="max-width: 1080px; margin: 0 auto; padding: 44px 24px 90px">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px">
         <div style="font-family: var(--font-heading); font-size: 28px; color: #eef1f4">RecceBuddy</div>
-        <button onClick="{{ startNewProject }}" style="background: #2f6f9f; color: #eef1f4; border: none; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+        <div style="display: flex; align-items: center; gap: 16px">
+          <sc-if value="{{ userEmail }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size: 12px; color: rgba(238,241,244,.6)">{{ userEmail }} · <a href="#" onClick="{{ signOut }}" style="color: rgba(238,241,244,.85); text-decoration: underline">Sign out</a></div>
+          </sc-if>
+          <button onClick="{{ startNewProject }}" style="background: #2f6f9f; color: #eef1f4; border: none; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+        </div>
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px">
         <a href="recce.html">
@@ -206,8 +212,42 @@ function blobToBase64(blob) {
   });
 }
 
+// Jobs/locations/photos are now real Postgres rows, scoped per signed-in
+// user via row-level security — every call to those endpoints has to carry
+// the user's own access token so the backend (and Postgres) know who's
+// asking. The Supabase CDN script tag lives in <helmet> above; since that's
+// injected by support.js's own DOM-building rather than a plain blocking
+// <head> tag, window.supabase isn't guaranteed to exist the instant this
+// script runs — waitForSupabase() polls briefly instead of assuming it's
+// ready (same defensive spirit as readExif()'s `if (!window.exifr)` check).
+const SUPABASE_URL = 'https://ohxgzvwflpiuzpaenotw.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable__7lPSmdKMOOI9jvOm9lh7Q_nIIE74JK';
+let _sb = null;
+function getSupabase() {
+  if (!_sb && window.supabase) _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  return _sb;
+}
+async function waitForSupabase(timeoutMs) {
+  const start = Date.now();
+  while (!window.supabase) {
+    if (Date.now() - start > (timeoutMs || 4000)) return null;
+    await new Promise(r => setTimeout(r, 50));
+  }
+  return getSupabase();
+}
+
+async function authedFetch(url, opts = {}) {
+  const headers = Object.assign({}, opts.headers);
+  const sb = await waitForSupabase();
+  if (sb) {
+    const { data } = await sb.auth.getSession();
+    if (data && data.session) headers.Authorization = `Bearer ${data.session.access_token}`;
+  }
+  return fetch(url, Object.assign({}, opts, { headers }));
+}
+
 async function postJSON(url, body) {
-  const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const res = await authedFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request to ${url} failed (${res.status}).`);
   return data;
@@ -217,11 +257,22 @@ class Component extends DCLogic {
   state = {
     view: 'list', jobs: [], jobName: '', shootDate: todayISO(), locations: [], addingLocation: false, newLocationDraft: '', dragOverLoc: null,
     creating: false, createProgress: '', createError: null, doneJob: null, doneLocationCount: 0, donePhotoCount: 0,
+    userEmail: '',
   };
 
   async componentDidMount() {
+    const sb = await waitForSupabase();
+    if (!sb) return; // Supabase failed to load — page still works, just without the "real" job list/save.
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+    this.setState({ userEmail: session.user.email });
+
     try {
-      const res = await fetch('/api/jobs');
+      const res = await authedFetch('/api/jobs');
       const data = await res.json();
       this.setState({ jobs: (data.jobs || []).slice().reverse() });
     } catch (e) {
@@ -229,6 +280,13 @@ class Component extends DCLogic {
       // shows the seed card only, same as before this feature existed.
     }
   }
+
+  signOut = async (e) => {
+    if (e) e.preventDefault();
+    const sb = await waitForSupabase();
+    if (sb) await sb.auth.signOut();
+    window.location.href = '/login.html';
+  };
 
   startNewProject = () => this.setState({ view: 'new', jobName: '', shootDate: todayISO(), locations: [], addingLocation: false, newLocationDraft: '', createError: null });
   backToList = () => this.setState({ view: 'list' });
@@ -329,6 +387,7 @@ class Component extends DCLogic {
     return {
       isList: this.state.view === 'list', isNew: this.state.view === 'new', isDone: this.state.view === 'done',
       startNewProject: this.startNewProject, backToList: this.backToList,
+      userEmail: this.state.userEmail, signOut: this.signOut,
       realJobCards,
       jobName: this.state.jobName, onJobNameInput: this.onJobNameInput,
       shootDate: this.state.shootDate, onShootDateInput: this.onShootDateInput,
