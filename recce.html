@@ -25,6 +25,12 @@
       font-size: 12px; display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.5);
       transition: transform .16s ease; }
     .pin-dot:hover { transform: scale(1.16); }
+    /* Pin colour by shot type: default (no type / 'camera') keeps the
+       palette's accent colour; iPhone reference stills are red; Sun Seeker
+       reference stills (added later) are yellow. Favouriting (below) still
+       takes visual priority over type colour when both apply. */
+    .pin.is-iphone .pin-dot { border-color: #d6483f; }
+    .pin.is-sunseeker .pin-dot { border-color: #d9a520; }
     .pin.is-fav .pin-dot { background: var(--ui-fav); border-color: var(--ui-panel); color: var(--ui-fav-ink); }
     .pin.is-sel .pin-dot { transform: scale(1.3); box-shadow: 0 0 0 4px var(--ui-halo), 0 3px 14px rgba(0,0,0,.55); }
     .pin.is-hidden { display: none; }
@@ -349,6 +355,13 @@ const SHOTS = [
   { id: '30', f: 'shot-30', lat: -37.817769, lon: 144.983603, bearing: 221, tilt: 9, mm: 24, t: '14:26:11' },
   { id: '31', f: 'shot-31', lat: -37.817592, lon: 144.982392, bearing: 201, tilt: 6, mm: 24, t: '14:31:13' },
   { id: '32', f: 'shot-32', lat: -37.817528, lon: 144.982381, bearing: 204, tilt: 6, mm: 24, t: '14:31:40' },
+  // Reference stills from Matt's iPhone (real GPS + compass heading read from
+  // each photo's own EXIF) — type:'iphone' marks these as reference shots
+  // rather than camera scouting positions, so they get their own pin colour
+  // and skip the FOV cone (their lens mm isn't a meaningful camera FOV).
+  { id: '33', f: 'shot-33', lat: -37.817142, lon: 144.982192, bearing: 164, tilt: 0, mm: 13, t: '14:04:24', type: 'iphone' },
+  { id: '34', f: 'shot-34', lat: -37.817497, lon: 144.982497, bearing: 158, tilt: 0, mm: 26, t: '14:06:11', type: 'iphone' },
+  { id: '35', f: 'shot-35', lat: -37.817500, lon: 144.982589, bearing: 153, tilt: 0, mm: 26, t: '14:06:28', type: 'iphone' },
 ];
 const FOV = { 24: { h: 57.6, v: 34.4 }, 20: { h: 67.0, v: 40.7 } }; // Cadrage burn-in, Alexa Mini 3.2K 1.78:1
 const SITE = { lat: -37.81998, lon: 144.98342 };
@@ -664,16 +677,33 @@ class Component extends DCLogic {
     this.sunLayer = L.layerGroup().addTo(map);
     this.pinLayer = L.layerGroup().addTo(map);
 
+    // Same renderer-race hazard documented on paint()/paintNow()/frameSun()
+    // below — guard each .addTo() individually so one bad cone can't stop
+    // the rest of the map from initializing.
     this.cones = SHOTS.map((s, i) => {
-      const poly = L.polygon(this.conePoints(s, this.state.coneLen), { color: this.pal().cone, weight: 1.5, opacity: .6, fillColor: this.pal().cone, fillOpacity: .16 }).addTo(this.coneLayer);
-      poly.on('click', () => this.select(i));
-      return poly;
+      try {
+        const poly = L.polygon(this.conePoints(s, this.state.coneLen), { color: this.pal().cone, weight: 1.5, opacity: .6, fillColor: this.pal().cone, fillOpacity: .16 }).addTo(this.coneLayer);
+        poly.on('click', () => this.select(i));
+        return poly;
+      } catch (e) {
+        console.warn('initMap: skipped creating a cone after a renderer error', e);
+        return L.polygon(this.conePoints(s, this.state.coneLen), { opacity: 0, fillOpacity: 0 });
+      }
     });
     const off = this.pinOffsets();
     this.pins = SHOTS.map((s, i) => {
       const [dx, dy] = off[i];
-      const m = L.marker([s.lat, s.lon], { zIndexOffset: 200,
-        icon: L.divIcon({ className: 'pin', html: `<div class="pin-dot">${s.id}</div>`, iconSize: [28, 28], iconAnchor: [14 - dx, 14 - dy] }) }).addTo(this.pinLayer);
+      // Shot type never changes after load, so its pin class is baked in
+      // here rather than re-toggled every paint() (see the CSS rules above).
+      const typeClass = s.type ? ` is-${s.type}` : '';
+      let m;
+      try {
+        m = L.marker([s.lat, s.lon], { zIndexOffset: 200,
+          icon: L.divIcon({ className: 'pin' + typeClass, html: `<div class="pin-dot">${s.id}</div>`, iconSize: [28, 28], iconAnchor: [14 - dx, 14 - dy] }) }).addTo(this.pinLayer);
+      } catch (e) {
+        console.warn('initMap: skipped placing a pin after a renderer error', e);
+        m = L.marker([s.lat, s.lon]);
+      }
       m.on('click', () => this.select(i));
       return m;
     });
@@ -826,7 +856,10 @@ class Component extends DCLogic {
     this.cones.forEach((poly, i) => {
       try {
         const on = i === sel, mode = this.state.coneMode;
-        const shown = mode !== 'off' && vis.indexOf(i) >= 0 && (mode === 'all' || on);
+        // Reference stills (SHOTS[i].type set) aren't camera scouting
+        // positions — their lens mm isn't a real FOV, so never cone them.
+        const isCameraShot = !SHOTS[i].type;
+        const shown = isCameraShot && mode !== 'off' && vis.indexOf(i) >= 0 && (mode === 'all' || on);
         poly.setLatLngs(this.conePoints(SHOTS[i], on ? this.state.coneLen * 1.7 : undefined));
         poly.setStyle({ color: this.pal().cone, fillColor: this.pal().cone,
           opacity: shown ? (on ? 1 : .5) : 0, fillOpacity: shown ? (on ? .34 : .12) : 0 });
