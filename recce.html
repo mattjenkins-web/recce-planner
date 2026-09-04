@@ -70,7 +70,12 @@
 
       <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px">
         <sc-for list="{{ locationChips }}" as="loc" hint-placeholder-count="1">
-          <button class="chip" onClick="{{ loc.onClick }}" style="{{ loc.style }} padding: 5px 12px; font-size: 12px">{{ loc.name }}</button>
+          <span style="display: inline-flex; align-items: center; border-radius: 999px; overflow: hidden">
+            <button class="chip" onClick="{{ loc.onClick }}" style="{{ loc.style }} padding: 5px 12px; font-size: 12px">{{ loc.name }}</button>
+            <sc-if value="{{ loc.canRemove }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ loc.onRemove }}" aria-label="Remove location" title="Remove location" style="{{ loc.style }} width: 22px; align-self: stretch; border: none; border-left: 1px solid rgba(0,0,0,.12); font-size: 13px; line-height: 1; cursor: pointer; padding: 0">×</button>
+            </sc-if>
+          </span>
         </sc-for>
         <sc-if value="{{ !addingLocation }}" hint-placeholder-val="{{ true }}">
           <button class="navbtn" onClick="{{ startAddLocation }}" aria-label="Add location" style="width: 28px; height: 28px; font-size: 15px">+</button>
@@ -117,20 +122,6 @@
             <svg viewBox="0 0 24 24" width="12" height="12" fill="var(--ui-fav)" stroke="var(--ui-fav)" stroke-width="2" stroke-linejoin="round"><path d="M12 3.5l2.7 5.6 6.1.8-4.4 4.3 1.1 6.1L12 17.4l-5.5 2.9 1.1-6.1L3.2 9.9l6.1-.8z"></path></svg>
           </div>
         </sc-if>
-        <button class="chip" onClick="{{ showAll }}" style="{{ allStyle }} padding: 5px 11px; font-size: 12px;">{{ allLabel }}</button>
-        <sc-if value="{{ hasHidden }}" hint-placeholder-val="{{ false }}">
-          <button class="chip" onClick="{{ toggleShowHidden }}" style="{{ hiddenStyle }} padding: 5px 11px; font-size: 12px;">Hidden {{ hiddenCount }}</button>
-        </sc-if>
-        <div style="display: flex; align-items: center; gap: 5px; background: var(--ui-hover); border-radius: 999px; padding: 5px 10px">
-          <sc-for list="{{ starFilterChips }}" as="sf" hint-placeholder-count="3">
-            <button onClick="{{ sf.onClick }}" aria-label="Toggle {{ sf.n }}-star filter" style="border: none; background: none; cursor: pointer; padding: 1px; line-height: 0; display: flex">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="{{ sf.fill }}" stroke="{{ sf.stroke }}" stroke-width="2" stroke-linejoin="round">
-                <path d="M12 3.5l2.7 5.6 6.1.8-4.4 4.3 1.1 6.1L12 17.4l-5.5 2.9 1.1-6.1L3.2 9.9l6.1-.8z"></path>
-              </svg>
-            </button>
-          </sc-for>
-          <span style="font-size: 12px; font-weight: 600; color: var(--ui-deep); margin-left: 2px">{{ starFilterCount }}</span>
-        </div>
       </div>
     </div>
 
@@ -142,6 +133,21 @@
           {{ tf.label }} {{ tf.count }}
         </button>
       </sc-for>
+      <div style="width: 1px; height: 18px; background: var(--ui-line); flex: none"></div>
+      <button class="chip" onClick="{{ showAll }}" style="{{ allStyle }} padding: 5px 11px; font-size: 12px;">{{ allLabel }}</button>
+      <sc-if value="{{ hasHidden }}" hint-placeholder-val="{{ false }}">
+        <button class="chip" onClick="{{ toggleShowHidden }}" style="{{ hiddenStyle }} padding: 5px 11px; font-size: 12px;">Hidden {{ hiddenCount }}</button>
+      </sc-if>
+      <div style="display: flex; align-items: center; gap: 5px; background: var(--ui-hover); border-radius: 999px; padding: 5px 10px">
+        <sc-for list="{{ starFilterChips }}" as="sf" hint-placeholder-count="3">
+          <button onClick="{{ sf.onClick }}" aria-label="Toggle {{ sf.n }}-star filter" style="border: none; background: none; cursor: pointer; padding: 1px; line-height: 0; display: flex">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="{{ sf.fill }}" stroke="{{ sf.stroke }}" stroke-width="2" stroke-linejoin="round">
+              <path d="M12 3.5l2.7 5.6 6.1.8-4.4 4.3 1.1 6.1L12 17.4l-5.5 2.9 1.1-6.1L3.2 9.9l6.1-.8z"></path>
+            </svg>
+          </button>
+        </sc-for>
+        <span style="font-size: 12px; font-weight: 600; color: var(--ui-deep); margin-left: 2px">{{ starFilterCount }}</span>
+      </div>
     </div>
 
     <div style="display: flex; align-items: center; gap: 3px; margin-bottom: 10px">
@@ -173,10 +179,17 @@
         </sc-for>
       </select>
     </div>
-    <label style="display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--ui-soft); cursor: pointer; user-select: none">
-      <input type="checkbox" checked="{{ clusterNearby }}" onChange="{{ onClusterToggle }}" style="cursor: pointer">
-      Cluster Sun/Scout photos next to their nearest Frame
-    </label>
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap">
+      <span style="font-size: 12px; font-weight: 700; color: var(--ui-soft)">Cluster:</span>
+      <label style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ui-soft); cursor: pointer; user-select: none">
+        <input type="checkbox" checked="{{ clusterScout }}" onChange="{{ onClusterScoutToggle }}" style="cursor: pointer">
+        Scout
+      </label>
+      <label style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ui-soft); cursor: pointer; user-select: none">
+        <input type="checkbox" checked="{{ clusterSun }}" onChange="{{ onClusterSunToggle }}" style="cursor: pointer">
+        Sun
+      </label>
+    </div>
     <div ref="{{ thumbStripRef }}" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 8px; padding: 3px 2px 6px; flex: none">
       <sc-if value="{{ showHidden }}" hint-placeholder-val="{{ false }}">
         <div style="flex: none; align-self: center; font-size: 11px; color: var(--ui-soft); padding: 0 6px; white-space: nowrap">Viewing hidden frames — click the eye icon to restore</div>
@@ -288,7 +301,7 @@
         <div style="width: 1px; height: 22px; background: var(--ui-line); flex: none"></div>
 
         <span style="display: flex; align-items: center; gap: 5px; flex: none">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ui-deep)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ui-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L5 21 L19 21 Z"></path><line x1="12" y1="2" x2="12" y2="21"></line></svg>
           <span style="color: var(--ui-soft); white-space: nowrap; font-size: 11px">Cones</span>
           <button class="chip" onClick="{{ setConeOff }}" style="{{ coneOffStyle }}">Off</button>
           <button class="chip" onClick="{{ setConeCurrent }}" style="{{ coneCurStyle }}">Current</button>
@@ -520,7 +533,7 @@ const loadComments = () => { try { return JSON.parse(localStorage.getItem(STORE_
 const loadHidden = () => { try { return JSON.parse(localStorage.getItem(STORE_HIDDEN)) || {}; } catch (e) { return {}; } };
 
 class Component extends DCLogic {
-  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], typeFilter: [], sortMode: 'custom', clusterNearby: false, pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: loadJobTitle('Uber Eats Phew — C7 Promo'), editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false, editingComment: null, editCommentDraft: '' };
+  state = { sel: 0, minutes: minutesOf(SHOTS[0].t), ready: false, favs: loadFavs(), starFilter: [], typeFilter: ['camera'], sortMode: 'custom', clusterSun: false, clusterScout: false, pal: 3, leftWidth: Math.round(window.innerWidth / 2), coneMode: 'current', showSun: true, thumbH: 96, mapMode: 'sat', showLabels: true, mapOpacity: 0.7, mapPanelOpen: true, cameraPanelOpen: true, sunPanelOpen: true, coneLen: 70, order: SHOTS.map((s, i) => i), userName: loadName(), comments: loadComments(), showNamePrompt: false, nameDraft: '', pendingAction: null, commentDraft: '', jobTitle: loadJobTitle('Uber Eats Phew — C7 Promo'), editingTitle: false, titleDraft: '', locations: [{ id: 'mcg', name: 'Melbourne Cricket Ground' }], activeLoc: 'mcg', addingLocation: false, newLocationDraft: '', shootDate: DEFAULT_DATE, editingDate: false, hidden: loadHidden(), showHidden: false, pendingUploads: [], showUploader: false, editingComment: null, editCommentDraft: '' };
 
   startEditTitle = () => this.setState({ editingTitle: true, titleDraft: this.state.jobTitle });
   onTitleInput = e => this.setState({ titleDraft: e.target.value });
@@ -528,11 +541,19 @@ class Component extends DCLogic {
   commitTitle = () => {
     const v = this.state.titleDraft.trim();
     const jobTitle = v || this.state.jobTitle;
+    const prevTitle = this.state.jobTitle;
     try { localStorage.setItem(STORE_JOBTITLE, jobTitle); } catch (e) {}
     // Shared via the board (see BOARD_ID above) so a rename here actually
     // shows up everywhere else the job name is displayed — e.g. the
     // projects list card, which used to just hardcode the old name.
     syncBoard({ jobTitle });
+    if (jobTitle !== prevTitle) {
+      this.pushUndo(() => {
+        try { localStorage.setItem(STORE_JOBTITLE, prevTitle); } catch (e) {}
+        syncBoard({ jobTitle: prevTitle });
+        this.setState({ jobTitle: prevTitle });
+      });
+    }
     this.setState({ jobTitle, editingTitle: false });
   };
   titleInputRef = el => { if (el) el.focus(); };
@@ -545,11 +566,37 @@ class Component extends DCLogic {
       const name = this.state.newLocationDraft.trim();
       if (!name) { this.cancelAddLocation(); return; }
       const id = 'loc' + Date.now();
+      const prevActiveLoc = this.state.activeLoc;
+      this.pushUndo(() => {
+        this.setState({
+          locations: this.state.locations.filter(l => l.id !== id),
+          activeLoc: prevActiveLoc === id ? 'mcg' : prevActiveLoc,
+        });
+      });
       this.setState({ locations: [...this.state.locations, { id, name }], activeLoc: id, addingLocation: false, newLocationDraft: '' });
     } else if (e.key === 'Escape') this.cancelAddLocation();
   };
   newLocationInputRef = el => { if (el) el.focus(); };
   setActiveLoc = id => () => this.setState({ activeLoc: id });
+  // Melbourne Cricket Ground ('mcg') is the one location with a real map
+  // wired up — removing it would orphan the whole page, so it's the only
+  // one that can't be deleted. Any other location the user added can be.
+  removeLocation = id => e => {
+    e.stopPropagation();
+    if (id === 'mcg') return;
+    const idx = this.state.locations.findIndex(l => l.id === id);
+    if (idx < 0) return;
+    const removed = this.state.locations[idx];
+    const prevActiveLoc = this.state.activeLoc;
+    this.pushUndo(() => {
+      const restored = this.state.locations.slice();
+      restored.splice(idx, 0, removed);
+      this.setState({ locations: restored, activeLoc: prevActiveLoc });
+    });
+    const locations = this.state.locations.filter(l => l.id !== id);
+    const activeLoc = this.state.activeLoc === id ? 'mcg' : this.state.activeLoc;
+    this.setState({ locations, activeLoc });
+  };
 
   startEditDate = () => this.setState({ editingDate: true });
   onDateInput = e => { const v = e.target.value; if (!v) return; this.setState({ shootDate: v }, () => { this.drawSun(); this.paint(); this.frameSun(this.state.sel); }); };
@@ -709,26 +756,31 @@ class Component extends DCLogic {
     base = this.state.showHidden ? base.filter(i => this.state.hidden[SHOTS[i].id]) : base.filter(i => !this.state.hidden[SHOTS[i].id]);
     // Clustering answers a different question ("what's near this frame?")
     // than the sort dropdown ("what order overall?") — the two don't
-    // compose, so clustering just wins outright whenever it's checked,
-    // regardless of which sort mode is selected underneath it.
-    return this.state.clusterNearby ? this.clusterByProximity(base) : this.sortShots(base);
+    // compose, so clustering just wins outright whenever either checkbox is
+    // on, regardless of which sort mode is selected underneath it.
+    return (this.state.clusterSun || this.state.clusterScout) ? this.clusterByProximity(base) : this.sortShots(base);
   }
-  // Groups every Scout/Sun still right after whichever Frame shot is
-  // physically closest to it (Sun before Scout within a cluster, per what's
-  // most useful to review first), so browsing the strip reads as
-  // "camera position → what the sky looks like here → ground reference".
-  // Works on top of any combination of the type-filter chips: if Frame
-  // shots are filtered out entirely, there's nothing to cluster against,
-  // so it quietly falls back to the incoming order instead of guessing.
+  // Groups Sun and/or Scout shots (whichever checkbox is on) right after
+  // whichever Frame shot is physically closest to them, so browsing the
+  // strip reads as "camera position → what the sky looks like here → ground
+  // reference". Works on top of any combination of the type-filter chips:
+  // if Frame shots are filtered out entirely, there's nothing to cluster
+  // against, so it quietly falls back to the incoming order instead of
+  // guessing. Whichever type *isn't* checked for clustering just tags along
+  // in normal sort order at the end, rather than being clustered too.
   clusterByProximity(list) {
     const frames = list.filter(i => !SHOTS[i].type);
-    if (!frames.length) return list;
-    const others = list.filter(i => SHOTS[i].type);
+    const clusterTypes = [];
+    if (this.state.clusterSun) clusterTypes.push('sunseeker');
+    if (this.state.clusterScout) clusterTypes.push('iphone');
+    if (!frames.length || !clusterTypes.length) return this.sortShots(list);
+    const toCluster = list.filter(i => clusterTypes.indexOf(SHOTS[i].type) >= 0);
+    const leftover = list.filter(i => SHOTS[i].type && clusterTypes.indexOf(SHOTS[i].type) < 0);
     const nearestFrame = i => frames.reduce((best, f) =>
       shotDist(i, f) < shotDist(i, best) ? f : best, frames[0]);
     const typeOrder = { sunseeker: 0, iphone: 1 };
     const byFrame = new Map();
-    others.forEach(i => {
+    toCluster.forEach(i => {
       const f = nearestFrame(i);
       if (!byFrame.has(f)) byFrame.set(f, []);
       byFrame.get(f).push(i);
@@ -737,6 +789,7 @@ class Component extends DCLogic {
       (typeOrder[SHOTS[a].type] - typeOrder[SHOTS[b].type]) || (shotDist(a, f) - shotDist(b, f))));
     const result = [];
     frames.forEach(f => { result.push(f); if (byFrame.has(f)) result.push(...byFrame.get(f)); });
+    result.push(...this.sortShots(leftover));
     return result;
   }
   // "Custom order" is the existing drag-to-arrange list (this.state.order)
@@ -754,7 +807,8 @@ class Component extends DCLogic {
     return sorted;
   }
   onSortChange = e => this.setState({ sortMode: e.target.value }, () => this.paint());
-  onClusterToggle = e => this.setState({ clusterNearby: e.target.checked }, () => this.paint());
+  onClusterSunToggle = e => this.setState({ clusterSun: e.target.checked }, () => this.paint());
+  onClusterScoutToggle = e => this.setState({ clusterScout: e.target.checked }, () => this.paint());
   toggleTypeFilter(type) {
     const cur = this.state.typeFilter;
     const typeFilter = cur.indexOf(type) >= 0 ? cur.filter(x => x !== type) : [...cur, type];
@@ -762,10 +816,17 @@ class Component extends DCLogic {
   }
   toggleHidden(i) {
     const id = SHOTS[i].id;
+    const prevHidden = this.state.hidden;
+    const prevShowHidden = this.state.showHidden;
     const hidden = { ...this.state.hidden };
     if (hidden[id]) delete hidden[id]; else hidden[id] = true;
     try { localStorage.setItem(STORE_HIDDEN, JSON.stringify(hidden)); } catch (e) {}
     syncBoard({ hidden });
+    this.pushUndo(() => {
+      try { localStorage.setItem(STORE_HIDDEN, JSON.stringify(prevHidden)); } catch (e) {}
+      syncBoard({ hidden: prevHidden });
+      this.setState({ hidden: prevHidden, showHidden: prevShowHidden }, () => this.paint());
+    });
     const showHidden = this.state.showHidden && Object.keys(hidden).length ? this.state.showHidden : false;
     const prevOrder = this.state.order;
     this.setState({ hidden, showHidden }, () => {
@@ -1112,9 +1173,19 @@ class Component extends DCLogic {
     this.select(vis[((at < 0 ? 0 : at) + dir + vis.length) % vis.length]);
   }
 
+  // Single-level undo: whatever mutating action ran most recently (rating,
+  // hide/unhide, add/remove location, rename) leaves one revert closure
+  // here, which Cmd/Ctrl+Z fires and clears — pressing it a second time
+  // does nothing, same as "undo the last action" rather than a full
+  // history stack. A plain instance field rather than React state, since
+  // storing it shouldn't itself trigger a render.
+  pushUndo = fn => { this._undo = fn; };
+  undoLast = () => { const fn = this._undo; if (!fn) return; this._undo = null; fn(); };
+
   onKeyDown = e => {
     const tag = (e.target && e.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); this.undoLast(); return; }
     if (e.key === 'ArrowLeft') { e.preventDefault(); this.step(-1); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); this.step(1); }
     else if (e.key === '1' || e.key === '2' || e.key === '3') { e.preventDefault(); this.requestName(() => this.setRating(this.state.sel, Number(e.key))); }
@@ -1147,10 +1218,16 @@ class Component extends DCLogic {
 
   setRating(i, n) {
     const id = SHOTS[i].id, cur = this.rating(i);
+    const prevFavs = this.state.favs;
     const favs = { ...this.state.favs };
     if (cur === n) delete favs[id]; else favs[id] = n;
     try { localStorage.setItem(STORE, JSON.stringify(favs)); } catch (e) {}
     syncBoard({ favs });
+    this.pushUndo(() => {
+      try { localStorage.setItem(STORE, JSON.stringify(prevFavs)); } catch (e) {}
+      syncBoard({ favs: prevFavs });
+      this.setState({ favs: prevFavs }, () => this.paint());
+    });
     this.setState({ favs }, () => this.paint());
   }
 
@@ -1215,7 +1292,7 @@ class Component extends DCLogic {
     const s = this.shot(), lib = this.lib, ev = this.events(), p = this.pal();
     const fav = this.isFav(this.state.sel);
     const th = this.state.thumbH, tw = Math.round(th * 1.45);
-    const canDrag = this.state.sortMode === 'custom' && !this.state.clusterNearby;
+    const canDrag = this.state.sortMode === 'custom' && !this.state.clusterSun && !this.state.clusterScout;
     const thumbs = this.visible().map(i => {
       const on = i === this.state.sel, rt = this.rating(i);
       const typeColor = (TYPE_META[SHOTS[i].type] || {}).color;
@@ -1259,7 +1336,10 @@ class Component extends DCLogic {
     const setPal = i => () => { this.applyPalette(i); this.setState({ pal: i }, () => { this.drawSun(); this.paint(); }); };
     const activeIsMcg = this.state.activeLoc === 'mcg';
     const activeLocName = (this.state.locations.find(l => l.id === this.state.activeLoc) || {}).name || 'Location';
-    const locationChips = this.state.locations.map(l => ({ name: l.name, onClick: this.setActiveLoc(l.id), style: l.id === this.state.activeLoc ? chipOn : chipOff }));
+    const locationChips = this.state.locations.map(l => ({
+      name: l.name, onClick: this.setActiveLoc(l.id), style: l.id === this.state.activeLoc ? chipOn : chipOff,
+      canRemove: l.id !== 'mcg', onRemove: this.removeLocation(l.id),
+    }));
     const [sdY, sdM, sdD] = this.state.shootDate.split('-');
     const shootDateLabel = `${sdD}.${sdM}.${sdY.slice(2)}`;
     return {
@@ -1366,7 +1446,8 @@ class Component extends DCLogic {
         { value: 'oldest', label: 'Oldest first' },
         { value: 'rating', label: 'Highest rated' },
       ],
-      clusterNearby: this.state.clusterNearby, onClusterToggle: this.onClusterToggle,
+      clusterSun: this.state.clusterSun, onClusterSunToggle: this.onClusterSunToggle,
+      clusterScout: this.state.clusterScout, onClusterScoutToggle: this.onClusterScoutToggle,
       showHidden: this.state.showHidden,
       hiddenCount: Object.keys(this.state.hidden).length,
       hasHidden: Object.keys(this.state.hidden).length > 0 || this.state.showHidden,
