@@ -1,5 +1,5 @@
-// GET  /api/board?id=xxx                                     -> { favs, hidden, comments, jobTitle } for one board
-// POST /api/board {id, favs?, hidden?, comments?, jobTitle?}  -> overwrite whichever fields are present
+// GET  /api/board?id=xxx                                            -> { favs, hidden, comments, jobTitle, meta } for one board
+// POST /api/board {id, favs?, hidden?, comments?, jobTitle?, meta?}  -> overwrite whichever fields are present
 //
 // A "board" is one shared map view (today, the single hardcoded demo map;
 // once the map is wired up per real project/location, its id will be
@@ -10,18 +10,21 @@
 // and it meant nobody's star picks or comments were actually shared with
 // the rest of the team. This makes that state real and shared.
 //
-// jobTitle joined the same mechanism for the same reason: renaming the job
-// on the map page used to only write to that browser's localStorage, so the
-// new name never showed up anywhere else that displays it (e.g. the
-// projects list card) — same class of bug as the original ratings problem.
+// jobTitle and meta (agency/productionCompany/director/dop/producer) joined
+// the same mechanism for the same reason: editing them on the map page used
+// to only write to that browser's localStorage (or, for meta, didn't exist
+// at all), so the values never showed up anywhere else that displays them
+// (e.g. the projects list tile) — same class of bug as the original ratings
+// problem. meta is one small object rather than five separate files since
+// it's always read/written together from the same tile.
 //
 // Each field is a small whole-object overwrite (favs/hidden are simple
 // shotId->value maps; comments is shotId->array; jobTitle is a plain
-// string), mirroring exactly what used to be written to localStorage. Two
-// people editing the *same* field at the exact same instant could still
-// clobber each other (last write wins) — an acceptable tradeoff for a small
-// team's casual use, and a real improvement over today's "doesn't persist
-// at all" baseline.
+// string; meta is a flat object of strings), mirroring exactly what used to
+// be written to localStorage. Two people editing the *same* field at the
+// exact same instant could still clobber each other (last write wins) — an
+// acceptable tradeoff for a small team's casual use, and a real improvement
+// over today's "doesn't persist at all" baseline.
 import { json, badRequest, serverError, readJSON, writeJSON } from './lib/_lib.mjs';
 
 export default async (req) => {
@@ -31,13 +34,14 @@ export default async (req) => {
     if (req.method === 'GET') {
       const id = url.searchParams.get('id');
       if (!id) return badRequest('id is required.');
-      const [favs, hidden, comments, jobTitle] = await Promise.all([
+      const [favs, hidden, comments, jobTitle, meta] = await Promise.all([
         readJSON(`boards/${id}/favs.json`, {}),
         readJSON(`boards/${id}/hidden.json`, {}),
         readJSON(`boards/${id}/comments.json`, {}),
         readJSON(`boards/${id}/jobTitle.json`, null),
+        readJSON(`boards/${id}/meta.json`, {}),
       ]);
-      return json(200, { favs, hidden, comments, jobTitle });
+      return json(200, { favs, hidden, comments, jobTitle, meta });
     }
 
     if (req.method === 'POST') {
@@ -51,6 +55,12 @@ export default async (req) => {
       if (body.hidden !== undefined) writes.push(writeJSON(`boards/${id}/hidden.json`, body.hidden));
       if (body.comments !== undefined) writes.push(writeJSON(`boards/${id}/comments.json`, body.comments));
       if (body.jobTitle !== undefined) writes.push(writeJSON(`boards/${id}/jobTitle.json`, body.jobTitle));
+      if (body.meta !== undefined) {
+        // Merge rather than overwrite whole — editing one field on the tile
+        // (e.g. just Director) shouldn't wipe out the others.
+        writes.push(readJSON(`boards/${id}/meta.json`, {}).then((existing) =>
+          writeJSON(`boards/${id}/meta.json`, { ...existing, ...body.meta })));
+      }
       await Promise.all(writes);
       return json(200, { ok: true });
     }

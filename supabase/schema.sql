@@ -21,19 +21,33 @@ create table public.profiles (
   created_at timestamptz not null default now()
 );
 
+-- Optional grouping for the job list (projects.html) — a job with no
+-- folder_id just shows up as uncategorized, so this is additive, not a
+-- required part of the jobs model.
+create table public.folders (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now()
+);
+create index folders_owner_idx on public.folders(owner_id);
+
 create table public.jobs (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
+  folder_id uuid references public.folders(id) on delete set null,
   name text not null,
   shoot_date date,
   client text[] not null default '{}',
   agency text[] not null default '{}',
   production_company text[] not null default '{}',
   director text[] not null default '{}',
+  dop text[] not null default '{}',
   producer text[] not null default '{}',
   created_at timestamptz not null default now()
 );
 create index jobs_owner_idx on public.jobs(owner_id);
+create index jobs_folder_idx on public.jobs(folder_id);
 
 create table public.locations (
   id uuid primary key default gen_random_uuid(),
@@ -96,6 +110,7 @@ create trigger on_auth_user_created
 -- job_members table plus an additional policy branch — once this baseline
 -- is in place.)
 alter table public.profiles enable row level security;
+alter table public.folders enable row level security;
 alter table public.jobs enable row level security;
 alter table public.locations enable row level security;
 alter table public.photos enable row level security;
@@ -105,6 +120,9 @@ create policy "profiles: read own" on public.profiles
   for select using (auth.uid() = id);
 create policy "profiles: update own" on public.profiles
   for update using (auth.uid() = id);
+
+create policy "folders: owner full access" on public.folders
+  for all using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
 
 create policy "jobs: owner full access" on public.jobs
   for all using (auth.uid() = owner_id) with check (auth.uid() = owner_id);

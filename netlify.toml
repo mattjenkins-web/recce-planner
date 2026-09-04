@@ -43,3 +43,8 @@
   from = "/api/board"
   to = "/.netlify/functions/board"
   status = 200
+
+[[redirects]]
+  from = "/api/folders"
+  to = "/.netlify/functions/folders"
+  status = 200

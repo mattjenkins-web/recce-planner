@@ -33,33 +33,124 @@
           <button onClick="{{ startNewProject }}" style="background: #2f6f9f; color: #eef1f4; border: none; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
         </div>
       </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px">
-        <a href="recce.html">
-          <div style="background: #eef1f4; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 26px rgba(0,0,0,.4); cursor: pointer">
-            <div style="height: 120px; background: linear-gradient(135deg, #1f4d70, #2f6f9f); position: relative">
-              <div style="position: absolute; bottom: 12px; left: 14px; width: 28px; height: 28px; border-radius: 999px; background: #eef1f4; border: 2px solid #2f6f9f; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #1f4d70">01</div>
-            </div>
-            <div style="padding: 16px 16px 18px">
-              <div style="font-family: var(--font-heading); font-size: 18px; color: #1a2430; margin-bottom: 4px">{{ demoJobTitle }}</div>
-              <div style="font-size: 12px; color: #5c6b7a">1 location · 61 frames · shoot 02.09.26</div>
-            </div>
-          </div>
-        </a>
-
-        <sc-for list="{{ realJobCards }}" as="rj" hint-placeholder-count="0">
-          <div title="Photo upload is saved for real — viewing this project on its own map is coming in a future update" style="background: #eef1f4; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 26px rgba(0,0,0,.4); opacity: .88">
-            <div style="height: 120px; background: linear-gradient(135deg, #3f4a28, #5c6b3c); position: relative">
-              <div style="position: absolute; bottom: 12px; left: 14px; background: rgba(24,32,40,.55); color: #eef1f4; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px">Saved ✓</div>
-            </div>
-            <div style="padding: 16px 16px 18px">
-              <div style="font-family: var(--font-heading); font-size: 18px; color: #1a2430; margin-bottom: 4px">{{ rj.name }}</div>
-              <div style="font-size: 12px; color: #5c6b7a">{{ rj.summary }}</div>
-            </div>
-          </div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap">
+        <sc-for list="{{ folderTabs }}" as="ft" hint-placeholder-count="0">
+          <button onClick="{{ ft.onClick }}" style="{{ ft.style }} border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">{{ ft.name }}</button>
         </sc-for>
-
-        <button onClick="{{ startNewProject }}" style="border: 2px dashed rgba(238,241,244,.32); background: transparent; border-radius: 16px; min-height: 190px; display: flex; align-items: center; justify-content: center; color: rgba(238,241,244,.6); font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+        <sc-if value="{{ !addingFolder }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ startAddFolder }}" style="background: transparent; color: rgba(238,241,244,.6); border: 1px dashed rgba(238,241,244,.3); border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New folder</button>
+        </sc-if>
+        <sc-if value="{{ addingFolder }}" hint-placeholder-val="{{ false }}">
+          <input ref="{{ newFolderInputRef }}" value="{{ newFolderDraft }}" onChange="{{ onNewFolderInput }}" onKeyDown="{{ onNewFolderKey }}" onBlur="{{ cancelAddFolder }}" placeholder="Folder name" style="font-size: 12px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(238,241,244,.3); background: rgba(238,241,244,.08); color: #eef1f4; width: 140px; font-family: var(--font-body); box-sizing: border-box">
+        </sc-if>
       </div>
+
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap">
+        <input value="{{ searchQuery }}" onChange="{{ onSearchInput }}" placeholder="Search title, date, agency, director…" style="flex: 1; min-width: 220px; font-size: 13px; padding: 9px 14px; border-radius: 999px; border: 1px solid rgba(238,241,244,.25); background: rgba(238,241,244,.08); color: #eef1f4; font-family: var(--font-body); box-sizing: border-box">
+        <select value="{{ sortMode }}" onChange="{{ onSortChange }}" style="font-size: 13px; padding: 9px 14px; border-radius: 999px; border: 1px solid rgba(238,241,244,.25); background: rgba(238,241,244,.08); color: #eef1f4; font-family: var(--font-body)">
+          <option value="newest">Newest created</option>
+          <option value="oldest">Oldest created</option>
+          <option value="shootSoonest">Shoot date (soonest)</option>
+          <option value="shootLatest">Shoot date (latest)</option>
+          <option value="az">Name (A–Z)</option>
+        </select>
+        <button onClick="{{ toggleViewMode }}" style="background: rgba(238,241,244,.08); color: #eef1f4; border: 1px solid rgba(238,241,244,.25); border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">{{ viewToggleLabel }}</button>
+      </div>
+
+      <sc-if value="{{ isGridView }}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px">
+          <sc-for list="{{ visibleCards }}" as="card" hint-placeholder-count="0">
+            <div title="{{ card.tooltip }}" style="background: #eef1f4; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 26px rgba(0,0,0,.4)">
+              <div onClick="{{ card.onClickCover }}" style="height: 120px; position: relative; background: {{ card.coverGradient }}; cursor: {{ card.cursorStyle }}">
+                <sc-if value="{{ card.coverUrl }}" hint-placeholder-val="{{ false }}">
+                  <img src="{{ card.coverUrl }}" style="width: 100%; height: 100%; object-fit: cover; display: block">
+                </sc-if>
+                <sc-if value="{{ card.isDemo }}" hint-placeholder-val="{{ false }}">
+                  <div style="position: absolute; bottom: 12px; left: 14px; width: 28px; height: 28px; border-radius: 999px; background: #eef1f4; border: 2px solid #2f6f9f; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #1f4d70">01</div>
+                </sc-if>
+                <sc-if value="{{ !card.isDemo }}" hint-placeholder-val="{{ true }}">
+                  <div style="position: absolute; bottom: 12px; left: 14px; background: rgba(24,32,40,.55); color: #eef1f4; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px">Saved ✓</div>
+                </sc-if>
+              </div>
+              <div style="padding: 16px 16px 18px">
+                <div onClick="{{ card.onClickTitle }}" style="font-family: var(--font-heading); font-size: 18px; color: #1a2430; margin-bottom: 10px; cursor: {{ card.cursorStyle }}">{{ card.name }}</div>
+                <div style="font-size: 22px; font-weight: 800; color: #1a2430; margin-bottom: 3px">{{ card.shootDateLabel }}</div>
+                <div style="font-size: 12px; color: #5c6b7a; margin-bottom: 12px">{{ card.countsLabel }}</div>
+                <sc-if value="{{ !card.isDemo }}" hint-placeholder-val="{{ true }}">
+                  <select value="{{ card.folderSelectValue }}" onChange="{{ card.onFolderSelectChange }}" style="width: 100%; font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(26,36,48,.16); font-family: var(--font-body); color: #1a2430; margin-bottom: 12px; box-sizing: border-box">
+                    <sc-for list="{{ card.folderOptions }}" as="fo" hint-placeholder-count="0">
+                      <option value="{{ fo.value }}">{{ fo.label }}</option>
+                    </sc-for>
+                  </select>
+                </sc-if>
+                <div style="border-top: 1px solid rgba(26,36,48,.08); padding-top: 10px">
+                  <sc-for list="{{ card.metaRows }}" as="mr" hint-placeholder-count="0">
+                    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 0">
+                      <span style="font-weight: 700; color: #1a2430; min-width: 84px; flex-shrink: 0">{{ mr.label }}</span>
+                      <sc-if value="{{ mr.editing }}" hint-placeholder-val="{{ false }}">
+                        <input ref="{{ mr.inputRef }}" value="{{ mr.draft }}" onChange="{{ mr.onChange }}" onKeyDown="{{ mr.onKeyDown }}" onBlur="{{ mr.onBlur }}" style="font-size: 12px; border: 1px solid rgba(47,111,159,.4); border-radius: 6px; padding: 2px 6px; flex: 1; min-width: 0; font-family: var(--font-body); color: #1a2430; background: #fff">
+                      </sc-if>
+                      <sc-if value="{{ !mr.editing }}" hint-placeholder-val="{{ true }}">
+                        <span onClick="{{ mr.onStart }}" style="{{ mr.valueStyle }}">{{ mr.displayValue }}</span>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+            <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: rgba(238,241,244,.6); font-size: 13px">No jobs match “{{ searchQuery }}”.</div>
+          </sc-if>
+
+          <button onClick="{{ startNewProject }}" style="border: 2px dashed rgba(238,241,244,.32); background: transparent; border-radius: 16px; min-height: 190px; display: flex; align-items: center; justify-content: center; color: rgba(238,241,244,.6); font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isListView }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <sc-for list="{{ visibleCards }}" as="card" hint-placeholder-count="0">
+            <div title="{{ card.tooltip }}" style="display: flex; align-items: center; gap: 16px; background: #eef1f4; border-radius: 12px; padding: 10px 16px; box-shadow: 0 6px 16px rgba(0,0,0,.3)">
+              <div onClick="{{ card.onClickCover }}" style="width: 84px; height: 56px; border-radius: 8px; overflow: hidden; flex-shrink: 0; position: relative; background: {{ card.coverGradient }}; cursor: {{ card.cursorStyle }}">
+                <sc-if value="{{ card.coverUrl }}" hint-placeholder-val="{{ false }}">
+                  <img src="{{ card.coverUrl }}" style="width: 100%; height: 100%; object-fit: cover; display: block">
+                </sc-if>
+              </div>
+              <div style="min-width: 170px; flex-shrink: 0">
+                <div onClick="{{ card.onClickTitle }}" style="font-family: var(--font-heading); font-size: 15px; color: #1a2430; cursor: {{ card.cursorStyle }}">{{ card.name }}</div>
+                <div style="font-size: 12px; color: #5c6b7a">{{ card.shootDateLabel }} · {{ card.countsLabel }}</div>
+              </div>
+              <div style="display: flex; gap: 14px; flex-wrap: wrap; flex: 1; min-width: 0">
+                <sc-for list="{{ card.metaRows }}" as="mr" hint-placeholder-count="0">
+                  <div style="display: flex; align-items: center; gap: 5px; font-size: 12px">
+                    <span style="font-weight: 700; color: #1a2430">{{ mr.label }}:</span>
+                    <sc-if value="{{ mr.editing }}" hint-placeholder-val="{{ false }}">
+                      <input ref="{{ mr.inputRef }}" value="{{ mr.draft }}" onChange="{{ mr.onChange }}" onKeyDown="{{ mr.onKeyDown }}" onBlur="{{ mr.onBlur }}" style="font-size: 12px; border: 1px solid rgba(47,111,159,.4); border-radius: 6px; padding: 1px 5px; width: 110px; font-family: var(--font-body); color: #1a2430; background: #fff">
+                    </sc-if>
+                    <sc-if value="{{ !mr.editing }}" hint-placeholder-val="{{ true }}">
+                      <span onClick="{{ mr.onStart }}" style="{{ mr.valueStyle }}; max-width: 120px">{{ mr.displayValue }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ !card.isDemo }}" hint-placeholder-val="{{ true }}">
+                <select value="{{ card.folderSelectValue }}" onChange="{{ card.onFolderSelectChange }}" style="font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(26,36,48,.16); font-family: var(--font-body); color: #1a2430; flex-shrink: 0">
+                  <sc-for list="{{ card.folderOptions }}" as="fo" hint-placeholder-count="0">
+                    <option value="{{ fo.value }}">{{ fo.label }}</option>
+                  </sc-for>
+                </select>
+              </sc-if>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align: center; padding: 30px; color: rgba(238,241,244,.6); font-size: 13px">No jobs match “{{ searchQuery }}”.</div>
+          </sc-if>
+
+          <button onClick="{{ startNewProject }}" style="border: 2px dashed rgba(238,241,244,.32); background: transparent; border-radius: 12px; min-height: 60px; display: flex; align-items: center; justify-content: center; color: rgba(238,241,244,.6); font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+        </div>
+      </sc-if>
     </div>
   </sc-if>
 
@@ -70,9 +161,32 @@
       <div style="background: #eef1f4; border-radius: 20px; padding: 28px 28px 32px; box-shadow: 0 10px 26px rgba(0,0,0,.4); margin-top: 18px">
         <div style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #1f4d70; font-weight: 700; margin-bottom: 8px">New job</div>
         <input value="{{ jobName }}" onChange="{{ onJobNameInput }}" placeholder="Untitled job" style="font-family: var(--font-heading); font-size: 30px; border: none; background: transparent; color: #1a2430; width: 100%; outline: none; margin-bottom: 16px; padding: 0; box-sizing: border-box">
-        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #1a2430; margin-bottom: 26px">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #1a2430; margin-bottom: 22px">
           <span>Shoot date</span>
           <input type="date" value="{{ shootDate }}" onChange="{{ onShootDateInput }}" style="font-size: 13px; font-weight: 700; border: 1px solid rgba(26,36,48,.16); border-radius: 6px; padding: 3px 8px; background: rgba(47,111,159,.06); color: #1a2430; font-family: var(--font-body)">
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 16px; margin-bottom: 26px">
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 700; color: #5c6b7a; margin-bottom: 4px">Agency</label>
+            <input value="{{ newAgency }}" onChange="{{ onNewAgencyInput }}" placeholder="e.g. VML" style="width: 100%; font-size: 13px; padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(26,36,48,.16); background: rgba(47,111,159,.06); color: #1a2430; font-family: var(--font-body); box-sizing: border-box">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 700; color: #5c6b7a; margin-bottom: 4px">Production Co.</label>
+            <input value="{{ newProductionCompany }}" onChange="{{ onNewProductionCompanyInput }}" placeholder="e.g. Finch" style="width: 100%; font-size: 13px; padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(26,36,48,.16); background: rgba(47,111,159,.06); color: #1a2430; font-family: var(--font-body); box-sizing: border-box">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 700; color: #5c6b7a; margin-bottom: 4px">Producer</label>
+            <input value="{{ newProducer }}" onChange="{{ onNewProducerInput }}" placeholder="Producer name" style="width: 100%; font-size: 13px; padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(26,36,48,.16); background: rgba(47,111,159,.06); color: #1a2430; font-family: var(--font-body); box-sizing: border-box">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 700; color: #5c6b7a; margin-bottom: 4px">Director</label>
+            <input value="{{ newDirector }}" onChange="{{ onNewDirectorInput }}" placeholder="Director name" style="width: 100%; font-size: 13px; padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(26,36,48,.16); background: rgba(47,111,159,.06); color: #1a2430; font-family: var(--font-body); box-sizing: border-box">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 700; color: #5c6b7a; margin-bottom: 4px">DOP</label>
+            <input value="{{ newDop }}" onChange="{{ onNewDopInput }}" placeholder="DOP name" style="width: 100%; font-size: 13px; padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(26,36,48,.16); background: rgba(47,111,159,.06); color: #1a2430; font-family: var(--font-body); box-sizing: border-box">
+          </div>
         </div>
 
         <div style="font-family: var(--font-heading); font-size: 16px; color: #1a2430; margin-bottom: 12px">Locations</div>
@@ -253,11 +367,42 @@ async function postJSON(url, body) {
   return data;
 }
 
+// Production-info fields shown (and click-to-edit) on every job tile, real
+// or demo. Order here is display order.
+const META_FIELDS = [
+  ['agency', 'Agency'], ['productionCompany', 'Production Co.'],
+  ['producer', 'Producer'], ['director', 'Director'], ['dop', 'DOP'],
+];
+
+function formatShootDate(iso) {
+  if (!iso) return 'No shoot date';
+  const parts = iso.split('-');
+  if (parts.length !== 3) return iso;
+  const [y, m, d] = parts;
+  return `${d}.${m}.${y.slice(2)}`;
+}
+
+// The demo job's "frames" are the hardcoded SHOTS array over on recce.html,
+// not real Postgres photos, so there's no API to ask "what's the first
+// favourited one?" — but shot ids are just '01'..'61' in order and every
+// filename is `shot-${id}.jpg` (true for every shot type added this
+// session), so that's reproducible here without needing the full array.
+const DEMO_SHOT_IDS = Array.from({ length: 61 }, (_, i) => String(i + 1).padStart(2, '0'));
+function pickDemoCoverUrl(favs) {
+  const favId = DEMO_SHOT_IDS.find((id) => favs && favs[id] > 0);
+  return `photos/shot-${favId || DEMO_SHOT_IDS[0]}.jpg`;
+}
+
 class Component extends DCLogic {
   state = {
     view: 'list', jobs: [], jobName: '', shootDate: todayISO(), locations: [], addingLocation: false, newLocationDraft: '', dragOverLoc: null,
     creating: false, createProgress: '', createError: null, doneJob: null, doneLocationCount: 0, donePhotoCount: 0,
-    userEmail: '', demoJobTitle: 'Uber Eats Phew — C7 Promo',
+    userEmail: '', demoJobTitle: 'Uber Eats Phew — C7 Promo', demoCoverUrl: 'photos/shot-01.jpg',
+    demoMeta: { agency: '', productionCompany: '', director: '', dop: '', producer: '' },
+    editingCard: null, editingDraft: '',
+    searchQuery: '', sortMode: 'newest', viewMode: 'grid',
+    folders: [], activeFolder: null, addingFolder: false, newFolderDraft: '',
+    newMeta: { agency: '', productionCompany: '', director: '', dop: '', producer: '' },
   };
 
   async componentDidMount() {
@@ -280,14 +425,29 @@ class Component extends DCLogic {
       // shows the seed card only, same as before this feature existed.
     }
 
-    // The demo card's title used to be hardcoded here, completely separate
-    // from the name the map page shows — renaming it on recce.html never
-    // reflected back here. Both now read the same shared "board" record
-    // (see /api/board, board.mjs) so a rename shows up everywhere.
+    try {
+      const foldersRes = await authedFetch('/api/folders');
+      const foldersData = await foldersRes.json();
+      this.setState({ folders: foldersData.folders || [] });
+    } catch (e) {}
+
+    // The demo card's title/production-info used to be hardcoded here,
+    // completely separate from what the map page shows — editing them on
+    // recce.html never reflected back here. Both now read the same shared
+    // "board" record (see /api/board, board.mjs) so an edit shows up
+    // everywhere. The cover photo is the first favourited shot (or the
+    // first shot, if nothing's been favourited yet) — favs live on the
+    // board too.
     try {
       const boardRes = await fetch('/api/board?id=mcg-demo');
       const boardData = boardRes.ok ? await boardRes.json() : null;
-      if (boardData && boardData.jobTitle) this.setState({ demoJobTitle: boardData.jobTitle });
+      if (boardData) {
+        this.setState({
+          demoJobTitle: boardData.jobTitle || this.state.demoJobTitle,
+          demoMeta: { ...this.state.demoMeta, ...(boardData.meta || {}) },
+          demoCoverUrl: pickDemoCoverUrl(boardData.favs),
+        });
+      }
     } catch (e) {}
   }
 
@@ -298,10 +458,99 @@ class Component extends DCLogic {
     window.location.href = '/login.html';
   };
 
-  startNewProject = () => this.setState({ view: 'new', jobName: '', shootDate: todayISO(), locations: [], addingLocation: false, newLocationDraft: '', createError: null });
+  goToDemoMap = () => { window.location.href = 'recce.html'; };
+
+  toggleViewMode = () => this.setState({ viewMode: this.state.viewMode === 'grid' ? 'list' : 'grid' });
+  onSearchInput = (e) => this.setState({ searchQuery: e.target.value });
+  onSortChange = (e) => this.setState({ sortMode: e.target.value });
+
+  setActiveFolder = (id) => this.setState({ activeFolder: id });
+  startAddFolder = () => this.setState({ addingFolder: true, newFolderDraft: '' });
+  onNewFolderInput = (e) => this.setState({ newFolderDraft: e.target.value });
+  cancelAddFolder = () => this.setState({ addingFolder: false, newFolderDraft: '' });
+  newFolderInputRef = (el) => { if (el) el.focus(); };
+  onNewFolderKey = async (e) => {
+    if (e.key === 'Enter') {
+      const name = this.state.newFolderDraft.trim();
+      this.setState({ addingFolder: false, newFolderDraft: '' });
+      if (!name) return;
+      try {
+        const { folder } = await postJSON('/api/folders', { name });
+        this.setState({ folders: [...this.state.folders, folder] });
+      } catch (e) {}
+    } else if (e.key === 'Escape') this.cancelAddFolder();
+  };
+  onJobFolderChange = async (jobId, e) => {
+    const folderId = e.target.value || null;
+    this.setState({ jobs: this.state.jobs.map((j) => (j.id === jobId ? { ...j, folderId } : j)) });
+    try {
+      await authedFetch(`/api/jobs?id=${jobId}`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ folderId }),
+      });
+    } catch (e) {}
+  };
+
+  // Click-to-edit for the production-info rows on every job tile (real
+  // jobs via PATCH /api/jobs, the demo job via the shared board) — same
+  // start/commit/cancel shape as recce.html's job-title editing.
+  startEditField = (id, field, currentValue) => this.setState({ editingCard: { id, field }, editingDraft: currentValue || '' });
+  onFieldDraftChange = (e) => this.setState({ editingDraft: e.target.value });
+  onFieldKey = (e) => {
+    if (e.key === 'Enter') this.commitField();
+    if (e.key === 'Escape') this.setState({ editingCard: null, editingDraft: '' });
+  };
+  fieldInputRef = (el) => { if (el) el.focus(); };
+  commitField = async () => {
+    const ec = this.state.editingCard;
+    if (!ec) return;
+    const value = this.state.editingDraft.trim();
+    this.setState({ editingCard: null, editingDraft: '' });
+    if (ec.id === 'demo') {
+      this.setState({ demoMeta: { ...this.state.demoMeta, [ec.field]: value } });
+      try {
+        await fetch('/api/board', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id: 'mcg-demo', meta: { [ec.field]: value } }),
+        });
+      } catch (e) {}
+    } else {
+      this.setState({ jobs: this.state.jobs.map((j) => (j.id === ec.id ? { ...j, [ec.field]: value } : j)) });
+      try {
+        await authedFetch(`/api/jobs?id=${ec.id}`, {
+          method: 'PATCH', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ [ec.field]: value }),
+        });
+      } catch (e) {}
+    }
+  };
+  buildMetaRows(cardId, values) {
+    return META_FIELDS.map(([field, label]) => {
+      const editing = !!this.state.editingCard && this.state.editingCard.id === cardId && this.state.editingCard.field === field;
+      const value = values[field] || '';
+      return {
+        field, label, editing,
+        draft: editing ? this.state.editingDraft : '',
+        displayValue: value || `+ Add ${label.toLowerCase()}`,
+        valueStyle: value
+          ? 'flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:text; color:#1a2430'
+          : 'flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:text; color:#93a0ac; font-style:italic',
+        onStart: () => this.startEditField(cardId, field, value),
+        onChange: this.onFieldDraftChange,
+        onKeyDown: this.onFieldKey,
+        onBlur: this.commitField,
+        inputRef: this.fieldInputRef,
+      };
+    });
+  }
+
+  startNewProject = () => this.setState({
+    view: 'new', jobName: '', shootDate: todayISO(), locations: [], addingLocation: false, newLocationDraft: '', createError: null,
+    newMeta: { agency: '', productionCompany: '', director: '', dop: '', producer: '' },
+  });
   backToList = () => this.setState({ view: 'list' });
   onJobNameInput = e => this.setState({ jobName: e.target.value });
   onShootDateInput = e => this.setState({ shootDate: e.target.value });
+  onNewMetaInput = (field, e) => this.setState({ newMeta: { ...this.state.newMeta, [field]: e.target.value } });
 
   startAddLocation = () => this.setState({ addingLocation: true, newLocationDraft: '' });
   onNewLocationInput = e => this.setState({ newLocationDraft: e.target.value });
@@ -341,7 +590,7 @@ class Component extends DCLogic {
     const totalPhotos = locations.reduce((n, l) => n + l.photos.length, 0);
     this.setState({ creating: true, createError: null, createProgress: 'Creating job…' });
     try {
-      const { job } = await postJSON('/api/jobs', { name: jobName, shootDate: this.state.shootDate });
+      const { job } = await postJSON('/api/jobs', { name: jobName, shootDate: this.state.shootDate, ...this.state.newMeta });
 
       let done = 0;
       for (const loc of locations) {
@@ -366,7 +615,11 @@ class Component extends DCLogic {
       this.setState({
         creating: false, view: 'done',
         doneJob: job, doneLocationCount: locations.length, donePhotoCount: totalPhotos,
-        jobs: [{ id: job.id, name: job.name, locationCount: locations.length, photoCount: totalPhotos }, ...this.state.jobs],
+        jobs: [{
+          id: job.id, name: job.name, shootDate: job.shootDate, createdAt: job.createdAt, folderId: job.folderId || null,
+          locationCount: locations.length, photoCount: totalPhotos, coverUrl: null,
+          ...this.state.newMeta,
+        }, ...this.state.jobs],
       });
     } catch (e) {
       this.setState({ creating: false, createError: e.message || 'Something went wrong saving this project — please try again.' });
@@ -390,18 +643,86 @@ class Component extends DCLogic {
       };
     });
     const canCreate = this.state.jobName.trim().length > 0 && locations.length > 0 && !this.state.creating;
-    const realJobCards = this.state.jobs.map(j => ({
+
+    const folderOptions = [
+      { value: '', label: 'No folder' },
+      ...this.state.folders.map((f) => ({ value: f.id, label: f.name })),
+    ];
+
+    // One shared shape for the demo tile and every real job tile, so search/
+    // sort/filter and both layouts (grid/list) all work off a single list —
+    // the demo has no real createdAt, so it's pinned to a fixed early date
+    // (predates any real job) rather than needing special-cased sort logic.
+    const DEMO_CREATED_AT = '2000-01-01T00:00:00.000Z';
+    const demoCard = {
+      id: 'demo', isDemo: true,
+      name: this.state.demoJobTitle,
+      shootDateLabel: '02.09.26', shootDateSort: '2026-09-02', createdAt: DEMO_CREATED_AT,
+      countsLabel: '1 location · 61 frames',
+      coverUrl: this.state.demoCoverUrl, coverGradient: 'linear-gradient(135deg, #1f4d70, #2f6f9f)',
+      tooltip: '', cursorStyle: 'pointer',
+      onClickCover: this.goToDemoMap, onClickTitle: this.goToDemoMap,
+      folderId: null,
+      metaRows: this.buildMetaRows('demo', this.state.demoMeta),
+      searchText: [this.state.demoJobTitle, '02.09.26', ...Object.values(this.state.demoMeta)].join(' ').toLowerCase(),
+    };
+    const realCards = this.state.jobs.map((j) => ({
+      id: j.id, isDemo: false,
       name: j.name,
-      summary: `${j.locationCount} location${j.locationCount === 1 ? '' : 's'} · ${j.photoCount} photo${j.photoCount === 1 ? '' : 's'} saved`,
+      shootDateLabel: formatShootDate(j.shootDate), shootDateSort: j.shootDate || '', createdAt: j.createdAt || '',
+      countsLabel: `${j.locationCount || 0} location${(j.locationCount || 0) === 1 ? '' : 's'} · ${j.photoCount || 0} frame${(j.photoCount || 0) === 1 ? '' : 's'}`,
+      coverUrl: j.coverUrl, coverGradient: 'linear-gradient(135deg, #3f4a28, #5c6b3c)',
+      tooltip: 'Viewing this project on its own map is coming in a future update', cursorStyle: 'default',
+      onClickCover: undefined, onClickTitle: undefined,
+      folderId: j.folderId || null,
+      folderSelectValue: j.folderId || '', folderOptions,
+      onFolderSelectChange: (e) => this.onJobFolderChange(j.id, e),
+      metaRows: this.buildMetaRows(j.id, j),
+      searchText: [j.name, formatShootDate(j.shootDate), j.agency, j.productionCompany, j.director, j.dop, j.producer].join(' ').toLowerCase(),
     }));
+
+    let visibleCards = [demoCard, ...realCards];
+    if (this.state.activeFolder) visibleCards = visibleCards.filter((c) => c.folderId === this.state.activeFolder);
+    const q = this.state.searchQuery.trim().toLowerCase();
+    if (q) visibleCards = visibleCards.filter((c) => c.searchText.includes(q));
+    const sortMode = this.state.sortMode;
+    visibleCards = visibleCards.slice().sort((a, b) => {
+      if (sortMode === 'az') return a.name.localeCompare(b.name);
+      if (sortMode === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+      if (sortMode === 'shootSoonest') return (a.shootDateSort || '9999-99-99').localeCompare(b.shootDateSort || '9999-99-99');
+      if (sortMode === 'shootLatest') return (b.shootDateSort || '0000-00-00').localeCompare(a.shootDateSort || '0000-00-00');
+      return new Date(b.createdAt) - new Date(a.createdAt); // 'newest' (default)
+    });
+
+    const folderTabs = [{ id: null, name: 'All jobs' }, ...this.state.folders].map((f) => {
+      const active = this.state.activeFolder === f.id;
+      return {
+        name: f.name, onClick: () => this.setActiveFolder(f.id),
+        style: active
+          ? 'background:#2f6f9f; color:#eef1f4; border:1px solid #2f6f9f;'
+          : 'background:rgba(238,241,244,.08); color:rgba(238,241,244,.75); border:1px solid rgba(238,241,244,.2);',
+      };
+    });
+
     return {
       isList: this.state.view === 'list', isNew: this.state.view === 'new', isDone: this.state.view === 'done',
       startNewProject: this.startNewProject, backToList: this.backToList,
       userEmail: this.state.userEmail, signOut: this.signOut,
-      demoJobTitle: this.state.demoJobTitle,
-      realJobCards,
+      visibleCards, noResults: visibleCards.length === 0 && !!q,
+      searchQuery: this.state.searchQuery, onSearchInput: this.onSearchInput,
+      sortMode: this.state.sortMode, onSortChange: this.onSortChange,
+      isGridView: this.state.viewMode === 'grid', isListView: this.state.viewMode === 'list',
+      toggleViewMode: this.toggleViewMode, viewToggleLabel: this.state.viewMode === 'grid' ? '☰ List view' : '⊞ Grid view',
+      folderTabs, addingFolder: this.state.addingFolder, newFolderDraft: this.state.newFolderDraft,
+      startAddFolder: this.startAddFolder, onNewFolderInput: this.onNewFolderInput,
+      onNewFolderKey: this.onNewFolderKey, cancelAddFolder: this.cancelAddFolder, newFolderInputRef: this.newFolderInputRef,
       jobName: this.state.jobName, onJobNameInput: this.onJobNameInput,
       shootDate: this.state.shootDate, onShootDateInput: this.onShootDateInput,
+      newAgency: this.state.newMeta.agency, onNewAgencyInput: e => this.onNewMetaInput('agency', e),
+      newProductionCompany: this.state.newMeta.productionCompany, onNewProductionCompanyInput: e => this.onNewMetaInput('productionCompany', e),
+      newDirector: this.state.newMeta.director, onNewDirectorInput: e => this.onNewMetaInput('director', e),
+      newDop: this.state.newMeta.dop, onNewDopInput: e => this.onNewMetaInput('dop', e),
+      newProducer: this.state.newMeta.producer, onNewProducerInput: e => this.onNewMetaInput('producer', e),
       addingLocation: this.state.addingLocation, newLocationDraft: this.state.newLocationDraft,
       startAddLocation: this.startAddLocation, onNewLocationInput: this.onNewLocationInput,
       onNewLocationKey: this.onNewLocationKey, cancelAddLocation: this.cancelAddLocation, newLocationInputRef: this.newLocationInputRef,
