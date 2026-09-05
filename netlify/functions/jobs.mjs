@@ -7,7 +7,7 @@
 // instead of the old Netlify Blobs JSON index files — every table is scoped
 // to its owner via row-level security, so this is naturally ready for
 // "100s of users, 100s of jobs each" instead of one shared flat file per job.
-import { json, badRequest, notFound, serverError, parseBody } from './lib/_lib.mjs';
+import { store, json, badRequest, notFound, serverError, parseBody } from './lib/_lib.mjs';
 import { clientForRequest, currentUser } from './lib/_supabase.mjs';
 
 // The production-info fields are `text[]` columns (room to grow into real
@@ -17,6 +17,11 @@ import { clientForRequest, currentUser } from './lib/_supabase.mjs';
 const META_FIELDS = { agency: 'agency', productionCompany: 'production_company', director: 'director', dop: 'dop', producer: 'producer' };
 const toArrayCol = (v) => (typeof v === 'string' && v.trim() ? [v.trim()] : []);
 const fromArrayCol = (arr) => (Array.isArray(arr) && arr[0]) || '';
+
+// A manually-picked hero photo (see cover.mjs) — same size cap as photos.mjs
+// and stored the same deterministic-key way, no DB column needed.
+const MAX_COVER_BYTES = 4.5 * 1024 * 1024;
+const coverKey = (jobId) => `covers/${jobId}`;
 
 function toApiJob(j, extra) {
   const out = {
@@ -66,19 +71,25 @@ export default async (req) => {
         }
       }
 
-      const enriched = jobs.map((j) => {
+      const enriched = await Promise.all(jobs.map(async (j) => {
         const photos = photosByJob[j.id] || [];
         const byOrder = (a, b) => (a.sort_order - b.sort_order) || (new Date(a.uploaded_at) - new Date(b.uploaded_at));
         const sorted = photos.slice().sort(byOrder);
         // "First favourite, or the first frame if nothing's been favourited" —
-        // a favourite is any photo with a star rating above zero.
+        // a favourite is any photo with a star rating above zero. A
+        // manually-set hero photo (see cover.mjs) always wins over this.
         const cover = sorted.find((p) => p.rating > 0) || sorted[0] || null;
+        let coverUrl = cover ? `/api/photo?id=${cover.id}` : null;
+        try {
+          const customCover = await store().getMetadata(coverKey(j.id));
+          if (customCover) coverUrl = `/api/cover?id=${j.id}`;
+        } catch (e) {}
         return toApiJob(j, {
           locationCount: locCountByJob[j.id] || 0,
           photoCount: photos.length,
-          coverUrl: cover ? `/api/photo?id=${cover.id}` : null,
+          coverUrl,
         });
-      });
+      }));
       return json(200, { jobs: enriched });
     }
 
@@ -111,7 +122,25 @@ export default async (req) => {
       for (const [apiKey, col] of Object.entries(META_FIELDS)) {
         if (apiKey in body) patch[col] = toArrayCol(body[apiKey]);
       }
-      if (!Object.keys(patch).length) return badRequest('Nothing to update.');
+      if (!Object.keys(patch).length && !body.coverImageBase64) return badRequest('Nothing to update.');
+
+      // A custom hero photo is a Blobs write, not a row in the (RLS-guarded)
+      // jobs table, so ownership needs its own check here rather than
+      // relying on the update below — which might not even run if the
+      // cover is the only thing changing.
+      if (body.coverImageBase64) {
+        const { data: owned, error: ownErr } = await client.from('jobs').select('id').eq('id', id).maybeSingle();
+        if (ownErr) return serverError(ownErr);
+        if (!owned) return notFound('Job not found.');
+
+        const buffer = Buffer.from(body.coverImageBase64, 'base64');
+        if (buffer.length > MAX_COVER_BYTES) {
+          return json(413, { error: `Image is too large (${(buffer.length / 1e6).toFixed(1)}MB). Please keep it under ${(MAX_COVER_BYTES / 1e6).toFixed(1)}MB.` });
+        }
+        await store().set(coverKey(id), buffer, { metadata: { contentType: body.coverContentType || 'image/jpeg' } });
+      }
+
+      if (!Object.keys(patch).length) return json(200, { job: { id } });
 
       const { data: job, error } = await client.from('jobs').update(patch).eq('id', id).select(cols).single();
       // A row-count-zero update (job not owned by this user, or doesn't

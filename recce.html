@@ -57,7 +57,7 @@
     <div style="background: var(--ui-panel); border-radius: var(--radius-lg); padding: 16px 20px 18px; box-shadow: var(--shadow-lg); flex: none">
       <a href="projects.html" style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--ui-soft); margin-bottom: 8px">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
-        All projects
+        All jobs
       </a>
       <div style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ui-deep); font-weight: 700">RecceBuddy · {{ activeLocName }}</div>
 
@@ -545,7 +545,7 @@ class Component extends DCLogic {
     try { localStorage.setItem(STORE_JOBTITLE, jobTitle); } catch (e) {}
     // Shared via the board (see BOARD_ID above) so a rename here actually
     // shows up everywhere else the job name is displayed — e.g. the
-    // projects list card, which used to just hardcode the old name.
+    // jobs list card, which used to just hardcode the old name.
     syncBoard({ jobTitle });
     if (jobTitle !== prevTitle) {
       this.pushUndo(() => {

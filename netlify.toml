@@ -48,3 +48,8 @@
   from = "/api/folders"
   to = "/.netlify/functions/folders"
   status = 200
+
+[[redirects]]
+  from = "/api/cover"
+  to = "/.netlify/functions/cover"
+  status = 200

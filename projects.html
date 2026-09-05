@@ -30,19 +30,19 @@
           <sc-if value="{{ userEmail }}" hint-placeholder-val="{{ false }}">
             <div style="font-size: 12px; color: rgba(238,241,244,.6)">{{ userEmail }} · <a href="#" onClick="{{ signOut }}" style="color: rgba(238,241,244,.85); text-decoration: underline">Sign out</a></div>
           </sc-if>
-          <button onClick="{{ startNewProject }}" style="background: #2f6f9f; color: #eef1f4; border: none; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+          <sc-if value="{{ !addingFolder }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ startAddFolder }}" style="background: transparent; color: rgba(238,241,244,.75); border: 1px dashed rgba(238,241,244,.35); border-radius: 999px; padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New folder</button>
+          </sc-if>
+          <sc-if value="{{ addingFolder }}" hint-placeholder-val="{{ false }}">
+            <input ref="{{ newFolderInputRef }}" value="{{ newFolderDraft }}" onChange="{{ onNewFolderInput }}" onKeyDown="{{ onNewFolderKey }}" onBlur="{{ cancelAddFolder }}" placeholder="Folder name" style="font-size: 13px; padding: 9px 14px; border-radius: 999px; border: 1px solid rgba(238,241,244,.3); background: rgba(238,241,244,.08); color: #eef1f4; width: 150px; font-family: var(--font-body); box-sizing: border-box">
+          </sc-if>
+          <button onClick="{{ startNewJob }}" style="background: #2f6f9f; color: #eef1f4; border: none; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New job</button>
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap">
         <sc-for list="{{ folderTabs }}" as="ft" hint-placeholder-count="0">
           <button onClick="{{ ft.onClick }}" style="{{ ft.style }} border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">{{ ft.name }}</button>
         </sc-for>
-        <sc-if value="{{ !addingFolder }}" hint-placeholder-val="{{ true }}">
-          <button onClick="{{ startAddFolder }}" style="background: transparent; color: rgba(238,241,244,.6); border: 1px dashed rgba(238,241,244,.3); border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New folder</button>
-        </sc-if>
-        <sc-if value="{{ addingFolder }}" hint-placeholder-val="{{ false }}">
-          <input ref="{{ newFolderInputRef }}" value="{{ newFolderDraft }}" onChange="{{ onNewFolderInput }}" onKeyDown="{{ onNewFolderKey }}" onBlur="{{ cancelAddFolder }}" placeholder="Folder name" style="font-size: 12px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(238,241,244,.3); background: rgba(238,241,244,.08); color: #eef1f4; width: 140px; font-family: var(--font-body); box-sizing: border-box">
-        </sc-if>
       </div>
 
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap">
@@ -61,7 +61,7 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px">
           <sc-for list="{{ visibleCards }}" as="card" hint-placeholder-count="0">
             <div title="{{ card.tooltip }}" style="background: #eef1f4; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 26px rgba(0,0,0,.4)">
-              <div onClick="{{ card.onClickCover }}" style="height: 120px; position: relative; background: {{ card.coverGradient }}; cursor: {{ card.cursorStyle }}">
+              <div onClick="{{ card.onClickCover }}" title="{{ card.coverTitle }}" style="height: 120px; position: relative; background: {{ card.coverGradient }}; cursor: {{ card.cursorStyle }}">
                 <sc-if value="{{ card.coverUrl }}" hint-placeholder-val="{{ false }}">
                   <img src="{{ card.coverUrl }}" style="width: 100%; height: 100%; object-fit: cover; display: block">
                 </sc-if>
@@ -70,6 +70,10 @@
                 </sc-if>
                 <sc-if value="{{ !card.isDemo }}" hint-placeholder-val="{{ true }}">
                   <div style="position: absolute; bottom: 12px; left: 14px; background: rgba(24,32,40,.55); color: #eef1f4; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px">Saved ✓</div>
+                  <div title="Click to change hero photo" style="position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 999px; background: rgba(24,32,40,.55); display: flex; align-items: center; justify-content: center">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#eef1f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"></path></svg>
+                  </div>
+                  <input type="file" accept="image/*" ref="{{ card.coverFileInputRef }}" onChange="{{ card.onCoverFileChange }}" style="display: none">
                 </sc-if>
               </div>
               <div style="padding: 16px 16px 18px">
@@ -77,11 +81,14 @@
                 <div style="font-size: 22px; font-weight: 800; color: #1a2430; margin-bottom: 3px">{{ card.shootDateLabel }}</div>
                 <div style="font-size: 12px; color: #5c6b7a; margin-bottom: 12px">{{ card.countsLabel }}</div>
                 <sc-if value="{{ !card.isDemo }}" hint-placeholder-val="{{ true }}">
-                  <select value="{{ card.folderSelectValue }}" onChange="{{ card.onFolderSelectChange }}" style="width: 100%; font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(26,36,48,.16); font-family: var(--font-body); color: #1a2430; margin-bottom: 12px; box-sizing: border-box">
-                    <sc-for list="{{ card.folderOptions }}" as="fo" hint-placeholder-count="0">
-                      <option value="{{ fo.value }}">{{ fo.label }}</option>
-                    </sc-for>
-                  </select>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px">
+                    <select value="{{ card.folderSelectValue }}" onChange="{{ card.onFolderSelectChange }}" style="flex: 1; min-width: 0; font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(26,36,48,.16); font-family: var(--font-body); color: #1a2430; box-sizing: border-box">
+                      <sc-for list="{{ card.folderOptions }}" as="fo" hint-placeholder-count="0">
+                        <option value="{{ fo.value }}">{{ fo.label }}</option>
+                      </sc-for>
+                    </select>
+                    <button onClick="{{ card.onDelete }}" title="Delete job" aria-label="Delete job" style="flex-shrink: 0; background: transparent; border: 1px solid rgba(192,86,33,.35); color: #c05621; border-radius: 6px; width: 28px; height: 28px; font-size: 13px; cursor: pointer; font-family: var(--font-body)">🗑</button>
+                  </div>
                 </sc-if>
                 <div style="border-top: 1px solid rgba(26,36,48,.08); padding-top: 10px">
                   <sc-for list="{{ card.metaRows }}" as="mr" hint-placeholder-count="0">
@@ -104,7 +111,7 @@
             <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: rgba(238,241,244,.6); font-size: 13px">No jobs match “{{ searchQuery }}”.</div>
           </sc-if>
 
-          <button onClick="{{ startNewProject }}" style="border: 2px dashed rgba(238,241,244,.32); background: transparent; border-radius: 16px; min-height: 190px; display: flex; align-items: center; justify-content: center; color: rgba(238,241,244,.6); font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+          <button onClick="{{ startNewJob }}" style="border: 2px dashed rgba(238,241,244,.32); background: transparent; border-radius: 16px; min-height: 190px; display: flex; align-items: center; justify-content: center; color: rgba(238,241,244,.6); font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New job</button>
         </div>
       </sc-if>
 
@@ -112,9 +119,12 @@
         <div style="display: flex; flex-direction: column; gap: 10px">
           <sc-for list="{{ visibleCards }}" as="card" hint-placeholder-count="0">
             <div title="{{ card.tooltip }}" style="display: flex; align-items: center; gap: 16px; background: #eef1f4; border-radius: 12px; padding: 10px 16px; box-shadow: 0 6px 16px rgba(0,0,0,.3)">
-              <div onClick="{{ card.onClickCover }}" style="width: 84px; height: 56px; border-radius: 8px; overflow: hidden; flex-shrink: 0; position: relative; background: {{ card.coverGradient }}; cursor: {{ card.cursorStyle }}">
+              <div onClick="{{ card.onClickCover }}" title="{{ card.coverTitle }}" style="width: 84px; height: 56px; border-radius: 8px; overflow: hidden; flex-shrink: 0; position: relative; background: {{ card.coverGradient }}; cursor: {{ card.cursorStyle }}">
                 <sc-if value="{{ card.coverUrl }}" hint-placeholder-val="{{ false }}">
                   <img src="{{ card.coverUrl }}" style="width: 100%; height: 100%; object-fit: cover; display: block">
+                </sc-if>
+                <sc-if value="{{ !card.isDemo }}" hint-placeholder-val="{{ true }}">
+                  <input type="file" accept="image/*" ref="{{ card.coverFileInputRef }}" onChange="{{ card.onCoverFileChange }}" style="display: none">
                 </sc-if>
               </div>
               <div style="min-width: 170px; flex-shrink: 0">
@@ -140,6 +150,7 @@
                     <option value="{{ fo.value }}">{{ fo.label }}</option>
                   </sc-for>
                 </select>
+                <button onClick="{{ card.onDelete }}" title="Delete job" aria-label="Delete job" style="flex-shrink: 0; background: transparent; border: 1px solid rgba(192,86,33,.35); color: #c05621; border-radius: 6px; width: 28px; height: 28px; font-size: 13px; cursor: pointer; font-family: var(--font-body)">🗑</button>
               </sc-if>
             </div>
           </sc-for>
@@ -148,7 +159,7 @@
             <div style="text-align: center; padding: 30px; color: rgba(238,241,244,.6); font-size: 13px">No jobs match “{{ searchQuery }}”.</div>
           </sc-if>
 
-          <button onClick="{{ startNewProject }}" style="border: 2px dashed rgba(238,241,244,.32); background: transparent; border-radius: 12px; min-height: 60px; display: flex; align-items: center; justify-content: center; color: rgba(238,241,244,.6); font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New project</button>
+          <button onClick="{{ startNewJob }}" style="border: 2px dashed rgba(238,241,244,.32); background: transparent; border-radius: 12px; min-height: 60px; display: flex; align-items: center; justify-content: center; color: rgba(238,241,244,.6); font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">+ New job</button>
         </div>
       </sc-if>
     </div>
@@ -156,7 +167,7 @@
 
   <sc-if value="{{ isNew }}" hint-placeholder-val="{{ false }}">
     <div style="max-width: 760px; margin: 0 auto; padding: 40px 24px 100px">
-      <button onClick="{{ backToList }}" style="background: none; border: none; color: rgba(238,241,244,.7); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; font-family: var(--font-body)">← All projects</button>
+      <button onClick="{{ backToList }}" style="background: none; border: none; color: rgba(238,241,244,.7); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; font-family: var(--font-body)">← All jobs</button>
 
       <div style="background: #eef1f4; border-radius: 20px; padding: 28px 28px 32px; box-shadow: 0 10px 26px rgba(0,0,0,.4); margin-top: 18px">
         <div style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #1f4d70; font-weight: 700; margin-bottom: 8px">New job</div>
@@ -235,7 +246,7 @@
         </sc-if>
 
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(26,36,48,.1); display: flex; align-items: center; gap: 12px">
-          <button onClick="{{ createProject }}" disabled="{{ creating }}" style="{{ createBtnStyle }} border: none; border-radius: 999px; padding: 12px 24px; font-size: 14px; font-weight: 700; font-family: var(--font-body)">{{ createBtnLabel }}</button>
+          <button onClick="{{ createJob }}" disabled="{{ creating }}" style="{{ createBtnStyle }} border: none; border-radius: 999px; padding: 12px 24px; font-size: 14px; font-weight: 700; font-family: var(--font-body)">{{ createBtnLabel }}</button>
           <sc-if value="{{ creating }}" hint-placeholder-val="{{ false }}">
             <span style="font-size: 12px; color: #5c6b7a">{{ createProgress }}</span>
           </sc-if>
@@ -250,8 +261,8 @@
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#eef1f4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
       </div>
       <div style="font-family: var(--font-heading); font-size: 24px; color: #eef1f4; margin-bottom: 10px">{{ doneJobName }} saved</div>
-      <div style="font-size: 14px; color: rgba(238,241,244,.72); margin-bottom: 30px; line-height: 1.5">{{ doneSummary }} — stored for real, not just a preview. Viewing this project on its own interactive map is coming in a future update.</div>
-      <button onClick="{{ backToList }}" style="background: #2f6f9f; color: #eef1f4; border: none; border-radius: 999px; padding: 11px 22px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">← All projects</button>
+      <div style="font-size: 14px; color: rgba(238,241,244,.72); margin-bottom: 30px; line-height: 1.5">{{ doneSummary }} — stored for real, not just a preview. Viewing this job on its own interactive map is coming in a future update.</div>
+      <button onClick="{{ backToList }}" style="background: #2f6f9f; color: #eef1f4; border: none; border-radius: 999px; padding: 11px 22px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font-body)">← All jobs</button>
     </div>
   </sc-if>
 
@@ -490,6 +501,44 @@ class Component extends DCLogic {
     } catch (e) {}
   };
 
+  // Deleting a job cascades to its locations and photo rows (see
+  // `on delete cascade` in schema.sql) — permanent, not just a local hide —
+  // so this confirms first rather than offering an undo for it.
+  deleteJob = async (id, name) => {
+    if (!window.confirm(`Delete “${name}”? This can’t be undone — its locations and photos go with it.`)) return;
+    const prevJobs = this.state.jobs;
+    this.setState({ jobs: this.state.jobs.filter((j) => j.id !== id) });
+    try {
+      const res = await authedFetch(`/api/jobs?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+    } catch (e) {
+      // Couldn't reach the server (or it refused) — put the tile back
+      // rather than leave the list quietly wrong.
+      this.setState({ jobs: prevJobs });
+      alert('Could not delete this job — please try again.');
+    }
+  };
+
+  // Manually picking a hero photo for a job tile — reuses the same
+  // downscale-then-base64 pipeline as photo upload in the "New job" form.
+  // Shows the picked image immediately via a local object URL; the real
+  // /api/cover URL takes over on the next full jobs refresh.
+  onChangeCoverFile = async (jobId, file) => {
+    if (!file || file.type.indexOf('image/') !== 0) return;
+    const localUrl = URL.createObjectURL(file);
+    this.setState({ jobs: this.state.jobs.map((j) => (j.id === jobId ? { ...j, coverUrl: localUrl } : j)) });
+    try {
+      const blob = await prepareBlob(file);
+      const dataBase64 = await blobToBase64(blob);
+      await authedFetch(`/api/jobs?id=${jobId}`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ coverImageBase64: dataBase64, coverContentType: blob.type || file.type }),
+      });
+    } catch (e) {
+      alert('Could not update the cover photo — please try again.');
+    }
+  };
+
   // Click-to-edit for the production-info rows on every job tile (real
   // jobs via PATCH /api/jobs, the demo job via the shared board) — same
   // start/commit/cancel shape as recce.html's job-title editing.
@@ -543,7 +592,7 @@ class Component extends DCLogic {
     });
   }
 
-  startNewProject = () => this.setState({
+  startNewJob = () => this.setState({
     view: 'new', jobName: '', shootDate: todayISO(), locations: [], addingLocation: false, newLocationDraft: '', createError: null,
     newMeta: { agency: '', productionCompany: '', director: '', dop: '', producer: '' },
   });
@@ -582,7 +631,7 @@ class Component extends DCLogic {
   setDragOver = locId => this.setState({ dragOverLoc: locId });
   clearDragOver = () => this.setState({ dragOverLoc: null });
 
-  createProject = async () => {
+  createJob = async () => {
     if (this.state.creating) return;
     const jobName = this.state.jobName.trim();
     const locations = this.state.locations;
@@ -622,7 +671,7 @@ class Component extends DCLogic {
         }, ...this.state.jobs],
       });
     } catch (e) {
-      this.setState({ creating: false, createError: e.message || 'Something went wrong saving this project — please try again.' });
+      this.setState({ creating: false, createError: e.message || 'Something went wrong saving this job — please try again.' });
     }
   };
 
@@ -660,7 +709,7 @@ class Component extends DCLogic {
       shootDateLabel: '02.09.26', shootDateSort: '2026-09-02', createdAt: DEMO_CREATED_AT,
       countsLabel: '1 location · 61 frames',
       coverUrl: this.state.demoCoverUrl, coverGradient: 'linear-gradient(135deg, #1f4d70, #2f6f9f)',
-      tooltip: '', cursorStyle: 'pointer',
+      tooltip: '', cursorStyle: 'pointer', coverTitle: 'Open the map',
       onClickCover: this.goToDemoMap, onClickTitle: this.goToDemoMap,
       folderId: null,
       metaRows: this.buildMetaRows('demo', this.state.demoMeta),
@@ -672,11 +721,20 @@ class Component extends DCLogic {
       shootDateLabel: formatShootDate(j.shootDate), shootDateSort: j.shootDate || '', createdAt: j.createdAt || '',
       countsLabel: `${j.locationCount || 0} location${(j.locationCount || 0) === 1 ? '' : 's'} · ${j.photoCount || 0} frame${(j.photoCount || 0) === 1 ? '' : 's'}`,
       coverUrl: j.coverUrl, coverGradient: 'linear-gradient(135deg, #3f4a28, #5c6b3c)',
-      tooltip: 'Viewing this project on its own map is coming in a future update', cursorStyle: 'default',
-      onClickCover: undefined, onClickTitle: undefined,
+      tooltip: 'Viewing this job on its own map is coming in a future update', cursorStyle: 'pointer',
+      coverTitle: 'Click to change hero photo',
+      // Clicking the cover changes it (there's no map to link to for a real
+      // job yet); the hidden file input lives right in the template next to
+      // this cover area, one per card, referenced via a property stashed on
+      // the job object itself — same pattern locationSections already uses.
+      onClickCover: () => { if (j._coverInput) j._coverInput.click(); },
+      coverFileInputRef: (el) => { j._coverInput = el; },
+      onCoverFileChange: (e) => { this.onChangeCoverFile(j.id, e.target.files[0]); e.target.value = ''; },
+      onClickTitle: undefined,
       folderId: j.folderId || null,
       folderSelectValue: j.folderId || '', folderOptions,
       onFolderSelectChange: (e) => this.onJobFolderChange(j.id, e),
+      onDelete: () => this.deleteJob(j.id, j.name),
       metaRows: this.buildMetaRows(j.id, j),
       searchText: [j.name, formatShootDate(j.shootDate), j.agency, j.productionCompany, j.director, j.dop, j.producer].join(' ').toLowerCase(),
     }));
@@ -706,7 +764,7 @@ class Component extends DCLogic {
 
     return {
       isList: this.state.view === 'list', isNew: this.state.view === 'new', isDone: this.state.view === 'done',
-      startNewProject: this.startNewProject, backToList: this.backToList,
+      startNewJob: this.startNewJob, backToList: this.backToList,
       userEmail: this.state.userEmail, signOut: this.signOut,
       visibleCards, noResults: visibleCards.length === 0 && !!q,
       searchQuery: this.state.searchQuery, onSearchInput: this.onSearchInput,
@@ -729,8 +787,8 @@ class Component extends DCLogic {
       locationSections,
       creating: this.state.creating, createProgress: this.state.createProgress, createError: this.state.createError,
       createBtnStyle: canCreate ? 'background:#2f6f9f; color:#eef1f4; cursor:pointer;' : 'background:rgba(26,36,48,.12); color:rgba(26,36,48,.4); cursor:not-allowed;',
-      createBtnLabel: this.state.creating ? 'Creating…' : 'Create project',
-      createProject: this.createProject,
+      createBtnLabel: this.state.creating ? 'Creating…' : 'Create job',
+      createJob: this.createJob,
       doneJobName: this.state.doneJob ? this.state.doneJob.name : '',
       doneSummary: `${this.state.doneLocationCount} location${this.state.doneLocationCount === 1 ? '' : 's'}, ${this.state.donePhotoCount} photo${this.state.donePhotoCount === 1 ? '' : 's'} uploaded`,
     };
