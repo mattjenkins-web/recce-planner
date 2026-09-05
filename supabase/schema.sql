@@ -53,6 +53,13 @@ create table public.locations (
   id uuid primary key default gen_random_uuid(),
   job_id uuid not null references public.jobs(id) on delete cascade,
   name text not null,
+  -- A DOP can link a Dropbox or Google Drive *shared folder link* instead of
+  -- (or as well as) uploading photos directly — no OAuth, just the public
+  -- link. The scheduled sync function (see netlify/functions/scheduled-sync.mjs)
+  -- polls every location that has one and imports anything new.
+  shared_folder_url text,
+  shared_folder_provider text,  -- 'dropbox' | 'google_drive'
+  shared_folder_last_synced_at timestamptz,
   created_at timestamptz not null default now()
 );
 create index locations_job_idx on public.locations(job_id);
